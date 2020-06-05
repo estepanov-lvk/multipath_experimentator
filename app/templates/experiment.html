@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <h1>Experiment: {{ experiment.id }}</h1>
+    <hr>
+    <p><b>Параметры эксперимента</b></p>
+    <table>
+    <tr> <td>Режим </td> <td>{{ experiment.mode }}</td> </tr>
+    <tr> <td>Политика маршрутизации </td> <td>{{ experiment.model }}</td> </tr>
+    <tr> <td>Количество подпотоков </td> <td>{{ experiment.subflows }}</td> </tr>
+    <tr> <td>Топология </td> <td>{{ experiment.topo }}</td> </tr>
+    <tr> <td>Число полюсов </td> <td>{{ experiment.poles }}</td> </tr>
+    <tr> <td>Число потоков </td> <td>{{ experiment.flows }}</td> </tr>
+    <tr> <td>Генерация полюсов </td> <td>{{ experiment.poles_seed }}</td> </tr>
+    <tr> <td>Генерация маршрутов </td> <td>{{ experiment.routes_seed }}</td> </tr>
+    <tr> <td>Алгоритм управления перегрузкой </td> <td>{{ experiment.cc }}</td> </tr>
+    <tr> <td>Распределение старта потоков </td> <td>{{ experiment.distribution }}</td> </tr>
+    <tr> <td>Время проведения эксперимента </td> <td>{{ experiment.time }}</td> </tr>
+    <tr> <td>Номер запуска </td> <td>{{ experiment.probe }}</td> </tr>
+    </table>
+{% endblock %}

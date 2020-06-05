@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <h1>Добро пожаловать, {{ current_user.username }}!</h1>
+    <a href="{{ url_for('exp_info', experimentid=1) }}">Эксперимент 1</a>
+    {% for vm in vms %}
+    <div><p>Condition of {{ vm.info.name }}: <b>{{ vm.condition }}</b></p></div>
+    {% endfor %}
+{% endblock %}
