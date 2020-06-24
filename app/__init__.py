@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
+from flask_socketio import SocketIO, emit
 
 from logging.handlers import RotatingFileHandler
 import os, logging
@@ -15,6 +16,10 @@ migrate = Migrate(app, db)
 login = LoginManager(app)
 login.login_view = 'login'
 bootstrap = Bootstrap(app)
+socketio = SocketIO(app, logger=True)
+
+if __name__=='__main__':
+    socketio.run(app, debug=True)
 
 if not app.debug:
     if not os.path.exists('logs'):
@@ -28,4 +33,8 @@ if not app.debug:
     app.logger.setLevel(logging.INFO)
     app.logger.info('Experimenter запустился')
 
+
+
+if __name__ == '__main__':
+    socketio.run(app)
 from app import routes, models, errors

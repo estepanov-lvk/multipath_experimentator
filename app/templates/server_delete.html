@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+
+{% block app_content %}
+    {# Import JQuery #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <h1>Удалить сервер</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.servername.label }}<br>
+            {{ form.servername(size=32) }}<br>
+            {% for error in form.servername.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}

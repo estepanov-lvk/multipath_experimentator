@@ -11,6 +11,7 @@ pip install python-dotenv
 pip install email-validator
 pip install python-telegram-bot
 pip install PySocks
+pip install flask_socketio
 
 
 RUN:

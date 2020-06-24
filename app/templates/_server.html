@@ -1,0 +1,19 @@
+<tr valign="top">
+    <td><a href="{{ url_for('server_edit', servername=serv.servername) }}">{{ serv.servername }}</a></td>
+    <td>{{ serv.server_ip }}</td>
+    {% if serv.state == "Не доступен" %}
+        <td style="color:red">{{ serv.state }}</td>
+    {% elif serv.state == "Доступен" %}
+        <td style="color:green">{{ serv.state }}</td>
+    {% else %}
+        <td style="color:orange">{{ serv.state }}</td>
+    {% endif %}
+
+    <td> <table>
+    {% for intf in serv.interfaces %}
+        <tr>
+            <td>{{ intf.interface_name }}</td>
+        </tr>
+    {% endfor %}
+    </table> </td>
+</tr>

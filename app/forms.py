@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length
-from app.models import User
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, FieldList, FormField, Form
+from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, IPAddress
+from app.models import User, Server
 
 class LoginForm(FlaskForm):
     username = StringField('Имя пользователя', validators = [DataRequired()])
@@ -41,3 +41,69 @@ class EditProfileForm(FlaskForm):
             user = User.query.filter_by(username=self.username.data).first()
             if user is not None:
                 raise ValidationError('Пожалуйста используйте другое имя пользователя.')
+
+class InterfaceForm(Form):
+    interface_name = StringField('Название интерфейса', validators=[DataRequired()])
+
+
+class ServerAddForm(FlaskForm):
+    servername = StringField('Имя сервера', validators=[DataRequired()])
+    server_ip = StringField('IP адрес сервера', validators=[DataRequired(), IPAddress()])
+    interfaces = FieldList(FormField(InterfaceForm), min_entries=0, max_entries=60)
+    submit = SubmitField('Добавить')
+
+    def validate_servername(self, servername):
+        server = Server.query.filter_by(servername=servername.data).first()
+        if server is not None:
+            raise ValidationError('Сервер с таким именем уже существует.')
+
+    def validate_server_ip(self, server_ip):
+        server = Server.query.filter_by(server_ip=server_ip.data).first()
+        if server is not None:
+            raise ValidationError('Сервер с таким IP адресом уже существует.')
+
+    def validate_interfaces(self, interfaces):
+        interface_names = set()
+        for intf in interfaces.data:
+            print(intf['interface_name'])
+            if intf['interface_name'] in interface_names:
+                raise ValidationError('Не может быть двух одинаковых интерфейсов')
+            interface_names.add(intf['interface_name'])
+            
+ 
+class ServerDeleteForm(FlaskForm):
+    servername = StringField('Имя сервера', validators=[DataRequired()])
+    submit = SubmitField('Удалить')
+
+    def validate_servername(self, servername):
+        server = Server.query.filter_by(servername=servername.data).first()
+        if server is None:
+            raise ValidationError('Не существует сервера с таким именем')
+
+
+class ServerEditForm(FlaskForm):
+    servername = StringField('Имя сервера', validators=[DataRequired()])
+    server_ip = StringField('IP адрес сервера', validators=[DataRequired(), IPAddress()])
+    interfaces = FieldList(FormField(InterfaceForm), min_entries=0, max_entries=60)
+    submit = SubmitField('Обновить')
+
+    def __init__(self, original_servername, original_ip, *args, **kwargs):
+        super(ServerEditForm, self).__init__(*args, **kwargs)
+        self.original_servername = original_servername
+        self.original_ip = original_ip
+
+    def validate_servername(self, servername):
+        if self.original_servername != servername.data:
+            server = Server.query.filter_by(servername=servername.data).first()
+            if server is not None:
+                raise ValidationError('Сервер с таким именем уже существует.')
+
+    def validate_server_ip(self, server_ip):
+        if self.original_ip != server_ip.data:
+            server = Server.query.filter_by(server_ip=server_ip.data).first()
+            if server is not None:
+                raise ValidationError('Сервер с таким IP адресом уже существует.')
+
+    def validate_interfaces(self, interfaces):
+        pass
+ 

@@ -4,6 +4,8 @@ from flask_login import UserMixin
 from hashlib import md5
 from datetime import datetime
 
+from app.stand.server_model import *
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -30,15 +32,6 @@ class User(UserMixin, db.Model):
 def load_user(id):
     return User.query.get(int(id))
 
-class Server(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    server_name = db.Column(db.String(20), index=True, unique=True)
-    server_ip = db.Column(db.String(15), index=True, unique=True)
-    vms = db.relationship('VM', backref='server', lazy='dynamic')
-
-    def __repr__(self):
-        return '<Server {}>'.format(self.server_name)
-
 class VM(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     vm_name = db.Column(db.String(20), index=True, unique=True)
@@ -47,7 +40,6 @@ class VM(db.Model):
 
     def __repr__(self):
         return '<VM {}>'.format(self.vm_name)
-
 
 class Experiment(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -1,4 +1,8 @@
 {% extends 'bootstrap/base.html' %}
+{% block head %}
+    {{ super() }}
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+{% endblock %}
 
 {% block title %}
     {% if title %}{{ title }}{% else %}Управление экспериментальным исследование методов демультиплексирования{% endif %}
@@ -19,6 +23,7 @@
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
                     <li><a href="{{ url_for('index') }}">Главная страница</a></li>
+                    <li><a href="{{ url_for('stand') }}">Аппаратная часть стенда</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}
