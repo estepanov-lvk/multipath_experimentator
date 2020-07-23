@@ -6,8 +6,8 @@ class Server(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     servername = db.Column(db.String(20), index=True, unique=True)
     server_ip = db.Column(db.String(15), index=True, unique=True)
-    vms = db.relationship('VM', backref='server', lazy='dynamic')
-    interfaces = db.relationship('ServerInterface', backref='server', lazy='dynamic')
+    vms = db.relationship('VM', backref='server')
+    interfaces = db.relationship('ServerInterface', backref='server')
 
     def __repr__(self):
         return '<Server {}>'.format(self.servername)

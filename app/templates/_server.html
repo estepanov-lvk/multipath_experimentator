@@ -1,19 +1,29 @@
 <tr valign="top">
-    <td><a href="{{ url_for('server_edit', servername=serv.servername) }}">{{ serv.servername }}</a></td>
-    <td>{{ serv.server_ip }}</td>
-    {% if serv.state == "Не доступен" %}
-        <td style="color:red">{{ serv.state }}</td>
-    {% elif serv.state == "Доступен" %}
-        <td style="color:green">{{ serv.state }}</td>
+    {% if serv.interfaces | length == 0 %}
+        <td><a href="{{ url_for('server_edit', servername=serv.servername) }}">{{ serv.servername }}</a></td>
+        <td>{{ serv.server_ip }}</td>
+        {% if serv.state == "Не доступен" %}
+            <td style="color:red">{{ serv.state }}</td>
+        {% elif serv.state == "Доступен" %}
+            <td style="color:green">{{ serv.state }}</td>
+        {% else %}
+            <td style="color:orange">{{ serv.state }}</td>
+        {% endif %}
     {% else %}
-        <td style="color:orange">{{ serv.state }}</td>
+        <td rowspan={{ serv.interfaces | length }}><a href="{{ url_for('server_edit', servername=serv.servername) }}">{{ serv.servername }}</a></td>
+        <td rowspan={{ serv.interfaces | length }}>{{ serv.server_ip }}</td>
+        {% if serv.state == "Не доступен" %}
+            <td rowspan={{ serv.interfaces | length }} style="color:red">{{ serv.state }}</td>
+        {% elif serv.state == "Доступен" %}
+            <td rowspan={{ serv.interfaces | length }} style="color:green">{{ serv.state }}</td>
+        {% else %}
+            <td rowspan={{ serv.interfaces | length }} style="color:orange">{{ serv.state }}</td>
+        {% endif %}
     {% endif %}
 
-    <td> <table>
     {% for intf in serv.interfaces %}
-        <tr>
-            <td>{{ intf.interface_name }}</td>
-        </tr>
+    <td>{{ intf.interface_name }}</td>
+    <td style="color:green">Поднят</td>
+    </tr><tr>
     {% endfor %}
-    </table> </td>
 </tr>
