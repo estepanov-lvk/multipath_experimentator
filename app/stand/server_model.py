@@ -25,4 +25,5 @@ class ServerInterface(db.Model):
     def __repr__(self):
         return '<Server interface {}>'.format(self.interface_name)
 
-
+    def update_state(self):
+        pass 
