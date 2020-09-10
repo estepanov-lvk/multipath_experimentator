@@ -3,8 +3,9 @@ from flask import request
 from app import app, db
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, ServerAddForm
 from app.forms import ServerDeleteForm, ServerEditForm
+from app.forms import ConnectionAddForm, ConnectionDeleteForm
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Experiment, Server, ServerInterface
+from app.models import User, Experiment, Server, ServerInterface, ServerConnection
 from werkzeug.urls import url_parse
 from datetime import datetime
 from app.telebot.mastermind import bot
@@ -109,6 +110,22 @@ def edit_profile():
         form.about_me.data = current_user.about_me
     return render_template('edit_profile.html', title='Редактировать профиль', form=form)
 
+def make_connections():
+    connections = []
+    conns = ServerConnection.query.all()
+    for conn in conns:
+        new_conn = {}
+        int1Model = ServerInterface.query.filter_by(id=conn.int1)[0]
+        int2Model = ServerInterface.query.filter_by(id=conn.int2)[0]
+        srv1Model = Server.query.filter_by(id=int1Model.server_id)[0]
+        srv2Model = Server.query.filter_by(id=int2Model.server_id)[0]
+        new_conn['serv1'] = srv1Model.servername
+        new_conn['int1'] = int1Model.interface_name
+        new_conn['int2'] = int2Model.interface_name
+        new_conn['serv2'] = srv2Model.servername
+        connections.append(new_conn)
+    return connections
+
 @app.route('/stand')
 @login_required
 def stand():
@@ -119,7 +136,8 @@ def stand():
         return elem
 
     servers = list(map(insertDefaultState, servers))
-    return render_template('stand.html', title='Аппаратная часть стенда', servers=servers)
+    connections = make_connections()
+    return render_template('stand.html', title='Аппаратная часть стенда', servers=servers, connections=connections)
 
 def makeServerStateInfo(server):
     return {
@@ -199,6 +217,105 @@ def server_delete():
         return redirect(url_for('stand'))
 
     return render_template('server_delete.html', title='Удаление сервера', form=form)
+
+
+def get_all_interfaces(servers):
+    result = {}
+    for serv in servers:
+        result[serv.servername] = []
+        server_interfaces = ServerInterface.query.filter_by(server_id = serv.id)
+        for intf in server_interfaces:
+            result[serv.servername].append(intf.interface_name)
+    print(result)
+    return result
+
+
+@app.route('/connection_add', methods=['GET', 'POST'])
+@login_required
+def connection_add():
+    form = ConnectionAddForm()
+
+    if form.validate_on_submit():
+        if form.server1.data == form.server2.data:
+            flash('Соединение не может быть между одним и тем же сервером.')
+            return redirect(url_for('connection_add'))
+
+        serv1Model = Server.query.filter_by(servername = form.server1.data)[0]
+        serv2Model = Server.query.filter_by(servername = form.server2.data)[0]
+        int1Model = ServerInterface.query.filter_by(server_id = serv1Model.id, interface_name = form.int1.data)[0]
+        int2Model = ServerInterface.query.filter_by(server_id = serv2Model.id, interface_name = form.int2.data)[0]
+
+        connections = ServerConnection.query.all()
+        for conn in connections:
+            if conn.int1 == int1Model.id and conn.int2 == int2Model.id or\
+                conn.int1 == int2Model.id and conn.int2 == int1Model.id:
+                flash('Такое соединение уже существует.')
+                return redirect(url_for('connection_add'))
+
+        new_conn = ServerConnection(int1 = int1Model.id,
+                                    int2 = int2Model.id)
+        db.session.add(new_conn)
+        db.session.commit()
+        flash('Новое соединение было успешно добавлено')
+        return redirect(url_for('stand'))
+
+    #add options values
+    servers = Server.query.all()
+    interfaces = get_all_interfaces(servers)
+    serverNames = []
+    for serv in servers:
+        serverNames.append(serv.servername)
+    form.server1.choices= [(srv, srv) for srv in serverNames]
+    form.server1.default = serverNames[0]
+    form.int1.choices = [(intf, intf) for intf in interfaces[serverNames[0]]]
+    form.server2.choices= [(srv, srv) for srv in serverNames]
+    form.server2.default = serverNames[1]
+    form.int2.choices = [(intf, intf) for intf in interfaces[serverNames[1]]]
+    form.process()
+    return render_template('connection_add.html', title='Добавление соединения', form=form, servers = serverNames, interfaces=interfaces)
+
+@app.route('/connection_delete', methods=['GET', 'POST'])
+@login_required
+def connection_delete():
+    form = ConnectionDeleteForm()
+
+    if form.validate_on_submit():
+        if form.server1.data == form.server2.data:
+            flash('Соединение не может быть между одним и тем же сервером.')
+            return redirect(url_for('connection_delete'))
+
+        serv1Model = Server.query.filter_by(servername = form.server1.data)[0]
+        serv2Model = Server.query.filter_by(servername = form.server2.data)[0]
+        int1Model = ServerInterface.query.filter_by(server_id = serv1Model.id, interface_name = form.int1.data)[0]
+        int2Model = ServerInterface.query.filter_by(server_id = serv2Model.id, interface_name = form.int2.data)[0]
+
+        connections = ServerConnection.query.all()
+        for conn in connections:
+            if conn.int1 == int1Model.id and conn.int2 == int2Model.id or\
+                conn.int1 == int2Model.id and conn.int2 == int1Model.id:
+                    db.session.delete(conn)
+                    db.session.commit()
+                    flash('Соединение было успешно удалено')
+                    return redirect(url_for('stand'))
+
+        flash('Такого соединения не существует')
+        return redirect(url_for('stand'))
+
+    #add options values
+    servers = Server.query.all()
+    interfaces = get_all_interfaces(servers)
+    serverNames = []
+    for serv in servers:
+        serverNames.append(serv.servername)
+    form.server1.choices= [(srv, srv) for srv in serverNames]
+    form.server1.default = serverNames[0]
+    form.int1.choices = [(intf, intf) for intf in interfaces[serverNames[0]]]
+    form.server2.choices= [(srv, srv) for srv in serverNames]
+    form.server2.default = serverNames[1]
+    form.int2.choices = [(intf, intf) for intf in interfaces[serverNames[1]]]
+    form.process()
+    return render_template('connection_delete.html', title='Удаление соединения', form=form, servers = serverNames, interfaces=interfaces)
+
 
 @app.route('/server_edit/<servername>', methods=['GET', 'POST'])
 @login_required

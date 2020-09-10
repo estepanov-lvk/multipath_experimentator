@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, FieldList, FormField, Form
+from wtforms import SelectField
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, IPAddress
 from app.models import User, Server
 
@@ -70,7 +71,25 @@ class ServerAddForm(FlaskForm):
             if intf['interface_name'] in interface_names:
                 raise ValidationError('Не может быть двух одинаковых интерфейсов')
             interface_names.add(intf['interface_name'])
-            
+
+class NonValidatingSelectField(SelectField):
+    def pre_validate(self, form):
+        return True
+ 
+class ConnectionAddForm(FlaskForm):
+    server1 = NonValidatingSelectField('Сервер 1', id='serv1')
+    int1 = NonValidatingSelectField('Интерфейс на сервере 1', id='int1')
+    int2 = NonValidatingSelectField('Интерфейс на сервере 2', id='int2')
+    server2 = NonValidatingSelectField('Сервер 2', id='serv2')
+    submit = SubmitField('Добавить')
+
+class ConnectionDeleteForm(FlaskForm):
+    server1 = NonValidatingSelectField('Сервер 1', id='serv1')
+    int1 = NonValidatingSelectField('Интерфейс на сервере 1', id='int1')
+    int2 = NonValidatingSelectField('Интерфейс на сервере 2', id='int2')
+    server2 = NonValidatingSelectField('Сервер 2', id='serv2')
+    submit = SubmitField('Удалить')
+
  
 class ServerDeleteForm(FlaskForm):
     servername = StringField('Имя сервера', validators=[DataRequired()])

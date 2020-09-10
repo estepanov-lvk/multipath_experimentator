@@ -27,6 +27,7 @@ class Server(db.Model):
 
 
 class ServerInterface(db.Model):
+    __tablename__ = 'serverinterface'
     id = db.Column(db.Integer, primary_key=True)
     interface_name = db.Column(db.String(20), index=True)
     server_id = db.Column(db.Integer, db.ForeignKey('server.id'))
@@ -49,3 +50,15 @@ class ServerInterface(db.Model):
             print(conn_config)
 
         return status
+
+class ServerConnection(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    int1 = db.Column(db.Integer, db.ForeignKey('serverinterface.id'))
+    int2 = db.Column(db.Integer, db.ForeignKey('serverinterface.id'))
+
+    def __repr__(self):
+        intModel1 = ServerInterface.query.filter_by(id=self.int1).first()
+        srvModel1 = Server.query.filter_by(id=intModel1.server_id).first()
+        intModel2 = ServerInterface.query.filter_by(id=self.int2).first()
+        srvModel2 = Server.query.filter_by(id=intModel2.server_id).first()
+        return '<Server connection {} {} --- {} {}>'.format(srvModel1.servername, intModel1.interface_name, intModel2.interface_name, srvModel2.servername)

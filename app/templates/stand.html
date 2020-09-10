@@ -34,4 +34,28 @@
     </div>
     </h4>
 
+    <h1>Соединения серверов:</h1>
+
+    <h4>
+    <table style="border-collapse: separate; border-spacing: 10px;" id="connectionTable">
+        <thead>
+            <tr valign="top">
+                <td> Имя сервера 1 </td>
+                <td> Имя интерфейса 1 </td>
+                <td> Имя интерфейса 2 </td>
+                <td> Имя сервера 2 </td>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for conn in connections %}
+                {% include "_connection.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+    <div>
+        <a href="{{ url_for('connection_add') }}">Добавить соединение</a>
+        <a href="{{ url_for('connection_delete') }}">Удалить соединение</a>
+    </div>
+    </h4>
 {% endblock %}

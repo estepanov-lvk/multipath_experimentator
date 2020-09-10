@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+
+{% block app_content %}
+    {# Import JQuery #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <script>
+            var interfaces = {};
+            {% for serv in servers %}
+                interfaces["{{serv}}"] = [];
+                {% for intf in interfaces[serv] %}
+                    interfaces["{{serv}}"].push("{{intf}}");
+                {% endfor %}
+            {% endfor %}
+
+            function getSelectedOption(sel) {
+                var opt;
+                for ( var i = 0, len = sel.options.length; i < len; i++ ) {
+                    opt = sel.options[i];
+                    if ( opt.selected === true ) {
+                        break;
+                    }
+                }
+                return opt;
+            }
+
+            function change_int1() {
+                selected = getSelectedOption($('#serv1').get()[0]);
+                int1 = $('#int1').get()[0];
+                while (int1.length > 0) {
+                    int1.remove(0);
+                }
+                for (var i = 0; i < interfaces[selected.value].length; i++ ) {
+                    var option = document.createElement("option");
+                    option.text = interfaces[selected.value][i];
+                    int1.add(option);
+                }
+            }
+
+
+            function change_int2() {
+                selected = getSelectedOption($('#serv2').get()[0]);
+                int2 = $('#int2').get()[0];
+                while (int2.length > 0) {
+                    int2.remove(0);
+                }
+                for (var i = 0; i < interfaces[selected.value].length; i++ ) {
+                    var option = document.createElement("option");
+                    option.text = interfaces[selected.value][i];
+                    int2.add(option);
+                }
+            }
+
+            $(document).ready(function() {
+                $('#serv1').on("change", change_int1);
+                $('#serv2').on("change", change_int2);
+            });
+    
+    </script>
+
+
+    <h1>Добавить соединение</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.server1.label }}<br>
+            {{ form.server1() }}<br>
+            {% for error in form.server1.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.int1.label }}<br>
+            {{ form.int1() }}<br>
+            {% for error in form.int1.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.int2.label }}<br>
+            {{ form.int2() }}<br>
+            {% for error in form.int2.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.server2.label }}<br>
+            {{ form.server2() }}<br>
+            {% for error in form.server2.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+
+{% endblock %}
