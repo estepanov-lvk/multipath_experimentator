@@ -1,0 +1,13 @@
+<tr valign="top">
+    <td><a href="{{ url_for('vm_edit', vmname=vm.vmname) }}">{{ vm.vmname }}</a></td>
+    <td>{{ vm.vm_ip }}</td>
+    <td>{{ vm.username }}</td>
+    <td>{{ vm.servername }}</td>
+    {% if vm.state == "Опущена" %}
+        <td style="color:red">{{ vm.state }}</td>
+    {% elif vm.state == "Поднята" %}
+        <td style="color:green">{{ vm.state }}</td>
+    {% else %}
+        <td style="color:orange">{{ vm.state }}</td>
+    {% endif %}
+</tr>

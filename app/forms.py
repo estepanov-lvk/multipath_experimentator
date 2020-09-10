@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, FieldList, FormField, Form
 from wtforms import SelectField
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, IPAddress
-from app.models import User, Server
+from app.models import User, Server, VM
 
 class LoginForm(FlaskForm):
     username = StringField('Имя пользователя', validators = [DataRequired()])
@@ -76,6 +76,24 @@ class NonValidatingSelectField(SelectField):
     def pre_validate(self, form):
         return True
  
+class VMAddForm(FlaskForm):
+    vmname = StringField('Имя виртуальной машины', validators=[DataRequired()])
+    vm_ip = StringField('IP адрес виртуальной машины', validators=[DataRequired(), IPAddress()])
+    username = StringField('Имя пользователя', validators=[DataRequired()])
+    servername = NonValidatingSelectField('Имя сервера', validators=[DataRequired()])
+    submit = SubmitField('Добавить')
+
+    def validate_vmname(self, vmname):
+        vm = VM.query.filter_by(vmname=vmname.data).first()
+        if vm is not None: 
+            raise ValidationError('Виртуальная машина с таким именем уже существует.')
+
+    def validate_vm_ip(self, vm_ip):
+        vm = VM.query.filter_by(vm_ip=vm_ip.data).first()
+        if vm is not None:
+            raise ValidationError('Виртуальная машина с таким IP адресом уже существует.')
+
+
 class ConnectionAddForm(FlaskForm):
     server1 = NonValidatingSelectField('Сервер 1', id='serv1')
     int1 = NonValidatingSelectField('Интерфейс на сервере 1', id='int1')
@@ -89,7 +107,41 @@ class ConnectionDeleteForm(FlaskForm):
     int2 = NonValidatingSelectField('Интерфейс на сервере 2', id='int2')
     server2 = NonValidatingSelectField('Сервер 2', id='serv2')
     submit = SubmitField('Удалить')
+ 
+class VMDeleteForm(FlaskForm):
+    vmname = StringField('Имя виртуальной машины', validators=[DataRequired()])
+    submit = SubmitField('Удалить')
 
+    def validate_vmname(self, vmname):
+        vm = VM.query.filter_by(vmname=vmname.data).first()
+        if vm is None:
+            raise ValidationError('Не существует виртуальной машины с таким именем')
+
+
+class VMEditForm(FlaskForm):
+    vmname = StringField('Имя виртуальной машины', validators=[DataRequired()])
+    vm_ip = StringField('IP адрес виртуальной машины', validators=[DataRequired(), IPAddress()])
+    username = StringField('Имя пользователя', validators=[DataRequired()])
+    servername = NonValidatingSelectField('Имя сервера', validators=[DataRequired()])
+    submit = SubmitField('Обновить')
+
+    def __init__(self, original_vmname, original_ip, *args, **kwargs):
+        super(VMEditForm, self).__init__(*args, **kwargs)
+        self.original_vmname = original_vmname
+        self.original_ip = original_ip
+
+    def validate_vmname(self, vmname):
+        if self.original_vmname != vmname.data:
+            vm = VM.query.filter_by(vmname=vmname.data).first()
+            if vm is not None:
+                raise ValidationError('Виртуальная машина с таким именем уже существует.')
+
+    def validate_vm_ip(self, vm_ip):
+        if self.original_ip != vm_ip.data:
+            vm = VM.query.filter_by(vm_ip=vm_ip.data).first()
+            if vm is not None:
+                raise ValidationError('Виртуальная машина с таким IP адресом уже существует.')
+ 
  
 class ServerDeleteForm(FlaskForm):
     servername = StringField('Имя сервера', validators=[DataRequired()])

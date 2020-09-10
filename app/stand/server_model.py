@@ -2,11 +2,7 @@
 
 from app import db, login
 import fabric
-
-SSHCONFIG = "./app/stand/ssh_config"
-SSHCONFIG_PATH = "./app/stand/"
-conn_config = fabric.Config(runtime_ssh_path=SSHCONFIG)
-conn_config.load_ssh_config()
+from app.stand.connections import conn_config
 
 class Server(db.Model):
     id = db.Column(db.Integer, primary_key=True)

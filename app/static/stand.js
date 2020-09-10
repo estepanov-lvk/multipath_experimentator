@@ -23,6 +23,19 @@ function updateServerState() {
     socket.emit('updateServerState', servers);
 }
 
+function updateVMState() {
+    const VM_NAME = 0;
+    let table = document.getElementById('vmTable'); 
+    let tableRows = table.getElementsByTagName('tbody')[0].rows;
+    let vms = [];
+    for (let i = 0; i < tableRows.length; i++) {
+        let firstCell = tableRows[i].cells[VM_NAME];
+        let cellText = firstCell.getElementsByTagName('a')[0].text
+        vms.push(cellText);
+    }
+    socket.emit('updateVMState', vms);
+}
+
 function updateInterfaceTable(msg) {
     const SERVER_NAME = 0;
     const INTERFACE_NAME = 4;
@@ -131,6 +144,27 @@ function updateServerStateTable(server) {
     }
 }
 
+function updateVMStateTable(vm) {
+    const VM_NAME = 0;
+    const VM_STATE = 4;
+    
+    let table = document.getElementById('vmTable'); 
+    let tableRows = table.getElementsByTagName('tbody')[0].rows;
+    for (let i = 0; i < tableRows.length; i++) {
+        let firstCell = tableRows[i].getElementsByTagName('td')[VM_NAME];
+        let node = firstCell.getElementsByTagName('a')[0]
+        if (node.text != vm.vmName) continue;
+        
+        let stateCell = tableRows[i].getElementsByTagName('td')[VM_STATE];
+        if (vm.vmState == "Доступна") {
+            stateCell.style.color = "green";
+        } else {
+            stateCell.style.color = "red";
+        }
+        stateCell.innerHTML = vm.vmState
+    }
+}
+
 // Client Side Javascript to receive server and interface state.
 $(document).ready(function(){
     // start up the SocketIO connection to the server - the namespace 'test' is also included here if necessary
@@ -142,8 +176,10 @@ $(document).ready(function(){
     });
     socket.on('updatedServerState', updateServerStateTable);
     socket.on('updatedInterfacesState', updateInterfaceTable);
+    socket.on('updatedVMState', updateVMStateTable);
 
     updateServerState()
+    updateVMState()
     //socket.emit('updateServerState', {dat: "1"});
     //console.log($servers)
 });

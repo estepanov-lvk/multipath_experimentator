@@ -58,4 +58,33 @@
         <a href="{{ url_for('connection_delete') }}">Удалить соединение</a>
     </div>
     </h4>
+
+
+    <h1>Используемые виртуальные машины (ВМ):</h1>
+
+    <h4>
+    <table style="border-collapse: separate; border-spacing: 10px;" id="vmTable">
+        <thead>
+            <tr valign="top">
+                <td> Имя ВМ </td>
+                <td> IP адрес ВМ </td>
+                <td> Имя пользователя </td>
+                <td> Имя сервера </td>
+                <td> Состояние ВМ </td>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for vm in vms %}
+                {% include "_vm.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+    <div>
+        <a href="{{ url_for('vm_add') }}">Добавить ВМ</a> 
+        <a href="{{ url_for('vm_delete') }}">Удалить ВМ</a> 
+    </div>
+    </h4>
+
+
 {% endblock %}

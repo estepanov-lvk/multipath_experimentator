@@ -4,8 +4,9 @@ from app import app, db
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, ServerAddForm
 from app.forms import ServerDeleteForm, ServerEditForm
 from app.forms import ConnectionAddForm, ConnectionDeleteForm
+from app.forms import VMAddForm, VMDeleteForm, VMEditForm
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Experiment, Server, ServerInterface, ServerConnection
+from app.models import User, Experiment, Server, ServerInterface, ServerConnection, VM
 from werkzeug.urls import url_parse
 from datetime import datetime
 from app.telebot.mastermind import bot
@@ -130,14 +131,21 @@ def make_connections():
 @login_required
 def stand():
     servers = Server.query.all()
+    vms = VM.query.all()
 
     def insertDefaultState(elem):
         elem.state = 'Обновляется'
         return elem
 
+    def insertServerName(elem):
+        elem.servername = Server.query.filter_by(id=elem.server_id).first().servername
+        return elem
+
     servers = list(map(insertDefaultState, servers))
+    vms = list(map(insertServerName, vms))
+    vms = list(map(insertDefaultState, vms))
     connections = make_connections()
-    return render_template('stand.html', title='Аппаратная часть стенда', servers=servers, connections=connections)
+    return render_template('stand.html', title='Аппаратная часть стенда', servers=servers, connections=connections, vms=vms)
 
 def makeServerStateInfo(server):
     return {
@@ -153,6 +161,23 @@ def updateServerState(msg):
             return
         server_obj.update_state()
         emit("updatedServerState", makeServerStateInfo(server_obj))
+
+def makeVMStateInfo(vm):
+    return {
+        "vmName": vm.vmname,
+        "vmState": vm.state
+    }
+
+@socketio.on('updateVMState', namespace='/test')
+def updateVMState(msg):
+    for vmName in msg:
+        vm_obj = VM.query.filter_by(vmname=vmName).first()
+        if vm_obj is None:
+            return
+        vm_obj.update_state()
+        emit("updatedVMState", makeVMStateInfo(vm_obj))
+
+
 
 @socketio.on('updateInterfacesState', namespace='/test')
 def updateInterfaceState(msg):
@@ -217,6 +242,45 @@ def server_delete():
         return redirect(url_for('stand'))
 
     return render_template('server_delete.html', title='Удаление сервера', form=form)
+
+@app.route('/vm_add', methods=['GET', 'POST'])
+@login_required
+def vm_add():
+    form = VMAddForm()
+
+    if form.validate_on_submit():
+        server = Server.query.filter_by(servername=form.servername.data).first()
+        vm = VM(vmname = form.vmname.data,
+                vm_ip = form.vm_ip.data,
+                username = form.username.data,
+                server_id = server.id)
+        vm.identity_file = get_identity_file(vm.vmname)
+        db.session.add(vm)
+        db.session.commit()
+        flash('Виртуальная машина {} была успешно добавлена'.format(form.vmname.data))
+        return redirect(url_for('stand'))
+
+    servers = Server.query.all()
+    serverNames = []
+    for serv in servers:
+        serverNames.append(serv.servername)
+    form.servername.choices= [(srv, srv) for srv in serverNames]
+    return render_template('vm_add.html', title='Добавление виртуальной машины', form=form)
+
+@app.route('/vm_delete', methods=['GET', 'POST'])
+@login_required
+def vm_delete():
+    form = VMDeleteForm()
+
+    if form.validate_on_submit():
+        vm = VM.query.filter_by(vmname = form.vmname.data).first()
+        db.session.delete(vm)
+        db.session.commit()
+        flash('Виртуальная машина {} была успешно удалена'.format(form.vmname.data))
+        return redirect(url_for('stand'))
+
+    return render_template('vm_delete.html', title='Удаление виртуальной машины', form=form)
+
 
 
 def get_all_interfaces(servers):
@@ -359,3 +423,36 @@ def server_edit(servername):
         for intf in list(server.interfaces):
             form.interfaces.append_entry(intf)
     return render_template('server_edit.html', title='Редактирование сервера', form=form)
+
+
+
+@app.route('/vm_edit/<vmname>', methods=['GET', 'POST'])
+@login_required
+def vm_edit(vmname):
+    vm = VM.query.filter_by(vmname=vmname).first()
+    if vm is None:
+        flash('Не существует виртуальной машины с именем {}'.format(vmname))
+        return redirect(url_for('stand'))
+
+    form = VMEditForm(vmname, vm.vm_ip)
+
+    if form.validate_on_submit():
+        vm.vmname = form.vmname.data
+        vm.vm_ip = form.vm_ip.data
+        vm.username = form.username.data
+        serv = Server.query.filter_by(servername=form.servername.data).first()
+        vm.server_id = serv.id
+        db.session.commit()
+        flash('Виртуальная машина {} была успешно обновлена'.format(form.vmname.data))
+        return redirect(url_for('stand'))
+    elif request.method == 'GET':
+        form.vmname.data = vm.vmname
+        form.vm_ip.data = vm.vm_ip
+        form.username.data = vm.username
+        servers = Server.query.all()
+        serverNames = []
+        for serv in servers:
+            serverNames.append(serv.servername)
+        form.servername.choices= [(srv, srv) for srv in serverNames]
+        form.servername.data = Server.query.filter_by(id=vm.server_id).first().servername
+    return render_template('vm_edit.html', title='Редактирование виртуальной машины', form=form)

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+
+{% block app_content %}
+    <h1>Редактировать виртуальную машину</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.vmname.label }}<br>
+            {{ form.vmname(size=32) }}<br>
+            {% for error in form.vmname.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.vm_ip.label }}<br>
+            {{ form.vm_ip(size=32) }}<br>
+            {% for error in form.vm_ip.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.username.label }}<br>
+            {{ form.username(size=32) }}<br>
+            {% for error in form.username.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.servername.label }}<br>
+            {{ form.servername() }}<br>
+            {% for error in form.servername.errors %}f
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}
