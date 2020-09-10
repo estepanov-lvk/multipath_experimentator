@@ -345,6 +345,9 @@ def server_edit(servername):
 
         for intf in old_interfaces:
             if intf.interface_name in interfaces_to_delete:
+                for conn in ServerConnection.query.all():
+                    if conn.int1 == intf.id or conn.int2 == intf.id:
+                        db.session.delete(conn)
                 db.session.delete(intf)
         db.session.commit()
         flash('Информация о сервере успешно обновлена')
