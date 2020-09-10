@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
 from app import db, login
+import fabric
+
+SSHCONFIG = "./app/stand/ssh_config"
+SSHCONFIG_PATH = "./app/stand/"
+conn_config = fabric.Config(runtime_ssh_path=SSHCONFIG)
+conn_config.load_ssh_config()
 
 class Server(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -8,6 +14,8 @@ class Server(db.Model):
     server_ip = db.Column(db.String(15), index=True, unique=True)
     vms = db.relationship('VM', backref='server')
     interfaces = db.relationship('ServerInterface', backref='server')
+    username = db.Column(db.String(20), index=False, unique=False)
+    identity_file = db.Column(db.String(40), index=False, unique=False)
 
     def __repr__(self):
         return '<Server {}>'.format(self.servername)
@@ -15,6 +23,7 @@ class Server(db.Model):
     def update_state(self):
         import os
         self.state = "Доступен" if os.system("ping -c 1 " + self.server_ip) is 0 else "Не доступен"
+
 
 
 class ServerInterface(db.Model):
@@ -26,4 +35,17 @@ class ServerInterface(db.Model):
         return '<Server interface {}>'.format(self.interface_name)
 
     def update_state(self):
-        pass 
+        status = 'Опущен'
+        server = Server.query.filter_by(id=self.server_id).first()
+        c = fabric.connection.Connection(host=server.servername, config=conn_config)
+
+        try:
+            res = c.run('cat /sys/class/net/{}/operstate'.format(self.interface_name), hide='both')
+            if res.stdout.startswith('up'):
+                status = 'Поднят'
+        except Exception as e:
+            print("EXCEPTION:    ", e)
+            print(server.servername)
+            print(conn_config)
+
+        return status

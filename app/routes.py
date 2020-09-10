@@ -136,6 +136,29 @@ def updateServerState(msg):
         server_obj.update_state()
         emit("updatedServerState", makeServerStateInfo(server_obj))
 
+@socketio.on('updateInterfacesState', namespace='/test')
+def updateInterfaceState(msg):
+    serverName = msg['serverName']
+    interfaces = msg['interfaces']
+
+    server_obj = Server.query.filter_by(servername=serverName).first()
+    if server_obj is None:
+        return
+
+    reply = {}
+    reply['serverName'] = serverName
+    reply['interfaces'] = {}
+
+    for intf in server_obj.interfaces:
+        state = intf.update_state()
+        reply['interfaces'][intf.interface_name] = state
+
+    emit('updatedInterfacesState', reply)
+
+def get_identity_file(servername):
+    return "~/.ssh/fdmp_stand"
+
+
 @app.route('/server_add', methods=['GET', 'POST'])
 @login_required
 def server_add():
@@ -144,7 +167,9 @@ def server_add():
 
     if form.validate_on_submit():
         server = Server(servername = form.servername.data,
-                        server_ip = form.server_ip.data)
+                        server_ip = form.server_ip.data,
+                        username = form.username.data)
+        server.identity_file = get_identity_file(server.servername)
         for intf in form.interfaces.data:
             new_intf = ServerInterface(interface_name = intf['interface_name'])
             new_intf.server_id = server.id
@@ -187,6 +212,7 @@ def server_edit(servername):
     if form.validate_on_submit():
         server.servername = form.servername.data
         server.server_ip = form.server_ip.data
+        server.username = form.username.data
 
         old_interfaces = list(server.interfaces)
         old_interface_names = set([x.interface_name for x in old_interfaces])
@@ -209,6 +235,7 @@ def server_edit(servername):
     elif request.method == 'GET':
         form.servername.data = server.servername
         form.server_ip.data = server.server_ip
+        form.username.data = server.username
         for intf in list(server.interfaces):
             form.interfaces.append_entry(intf)
     return render_template('server_edit.html', title='Редактирование сервера', form=form)

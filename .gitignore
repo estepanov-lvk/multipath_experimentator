@@ -2,3 +2,6 @@ __pycache__
 venv
 logs
 */__pycache__
+configs
+*.swp
+app/stand/ssh_config

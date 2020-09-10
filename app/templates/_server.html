@@ -2,6 +2,7 @@
     {% if serv.interfaces | length == 0 %}
         <td><a href="{{ url_for('server_edit', servername=serv.servername) }}">{{ serv.servername }}</a></td>
         <td>{{ serv.server_ip }}</td>
+        <td>{{ serv.username }}</td>
         {% if serv.state == "Не доступен" %}
             <td style="color:red">{{ serv.state }}</td>
         {% elif serv.state == "Доступен" %}
@@ -12,6 +13,7 @@
     {% else %}
         <td rowspan={{ serv.interfaces | length }}><a href="{{ url_for('server_edit', servername=serv.servername) }}">{{ serv.servername }}</a></td>
         <td rowspan={{ serv.interfaces | length }}>{{ serv.server_ip }}</td>
+        <td rowspan={{ serv.interfaces | length }}>{{ serv.username }}</td>
         {% if serv.state == "Не доступен" %}
             <td rowspan={{ serv.interfaces | length }} style="color:red">{{ serv.state }}</td>
         {% elif serv.state == "Доступен" %}
@@ -23,7 +25,7 @@
 
     {% for intf in serv.interfaces %}
     <td>{{ intf.interface_name }}</td>
-    <td style="color:green">Поднят</td>
+    <td style="color:orange">Обновляется</td>
     </tr><tr>
     {% endfor %}
 </tr>

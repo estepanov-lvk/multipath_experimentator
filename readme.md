@@ -12,6 +12,8 @@ pip install email-validator
 pip install python-telegram-bot
 pip install PySocks
 pip install flask_socketio
+pip install fabric
+pip install textwrap3
 
 
 RUN:

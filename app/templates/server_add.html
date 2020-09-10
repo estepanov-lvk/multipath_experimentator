@@ -120,6 +120,13 @@
             <span style="color: red;">[{{ error }}]</span>
             {% endfor %}
         </p>
+        <p>
+            {{ form.username.label }}<br>
+            {{ form.username(size=32) }}<br>
+            {% for error in form.username.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
         <div id="subforms-container">
             {% for subform in form.interfaces %}
                 <div id="interface-{{ loop.index0 }}-form" class="subform" data-index="{{ loop.index0 }}">

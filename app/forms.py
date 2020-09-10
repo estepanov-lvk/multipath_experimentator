@@ -49,6 +49,7 @@ class InterfaceForm(Form):
 class ServerAddForm(FlaskForm):
     servername = StringField('Имя сервера', validators=[DataRequired()])
     server_ip = StringField('IP адрес сервера', validators=[DataRequired(), IPAddress()])
+    username = StringField('Имя пользователя', validators=[DataRequired()])
     interfaces = FieldList(FormField(InterfaceForm), min_entries=0, max_entries=60)
     submit = SubmitField('Добавить')
 
@@ -84,6 +85,7 @@ class ServerDeleteForm(FlaskForm):
 class ServerEditForm(FlaskForm):
     servername = StringField('Имя сервера', validators=[DataRequired()])
     server_ip = StringField('IP адрес сервера', validators=[DataRequired(), IPAddress()])
+    username = StringField('Имя пользователя', validators=[DataRequired()])
     interfaces = FieldList(FormField(InterfaceForm), min_entries=0, max_entries=60)
     submit = SubmitField('Обновить')
 
