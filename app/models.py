@@ -6,6 +6,8 @@ from datetime import datetime
 
 from app.stand.server_model import *
 from app.stand.vm_model import *
+#TODO rename to single style
+from app.experiment.ExperimentModel import *
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,20 +35,3 @@ class User(UserMixin, db.Model):
 def load_user(id):
     return User.query.get(int(id))
 
-class Experiment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    mode = db.Column(db.String(10), index=True)
-    model = db.Column(db.String(10), index=True)
-    subflow = db.Column(db.Integer, index=True)
-    topo = db.Column(db.String(20), index=True)
-    poles = db.Column(db.Integer, index=True)
-    flows = db.Column(db.Integer, index=True)
-    poles_seed = db.Column(db.Integer, index=True)
-    routes_seed = db.Column(db.Integer, index=True)
-    cc = db.Column(db.String(20), index=True)
-    distribution = db.Column(db.String(20), index=True)
-    time = db.Column(db.Integer, index=True)
-    probe = db.Column(db.Integer, index=True)
-
-    def __repr__(self):
-        return '<Experiment {}>'.format(self.id)

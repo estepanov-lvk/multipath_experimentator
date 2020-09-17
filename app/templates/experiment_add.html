@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <h1>Добавить серию экспериментов</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.mode.label }}<br>
+            {{ form.mode() }}
+            {% for error in form.mode.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.model.label }}<br>
+            {{ form.model() }}
+            {% for error in form.model.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.subflow.label }}<br>
+            {{ form.subflow() }}
+            {% for error in form.subflow.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.time.label }}<br>
+            {{ form.time() }}
+            {% for error in form.time.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.flows.label }}<br>
+            {{ form.flows() }}
+            {% for error in form.flows.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.poles.label }}<br>
+            {{ form.poles() }}
+            {% for error in form.poles.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.poles_seed.label }}<br>
+            {{ form.poles_seed() }}
+            {% for error in form.poles_seed.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.routes_seed.label }}<br>
+            {{ form.routes_seed() }}
+            {% for error in form.routes_seed.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.probe.label }}<br>
+            {{ form.probe() }}
+            {% for error in form.probe.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+
+        <p>
+            {{ form.cc.label }}<br>
+            {{ form.cc() }}
+            {% for error in form.cc.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.distribution.label }}<br>
+            {{ form.distribution() }}
+            {% for error in form.distribution.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.protocol.label }}<br>
+            {{ form.protocol() }}
+            {% for error in form.protocol.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.topos.label }}<br>
+            {{ form.topos() }}
+            {% for error in form.topos.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}

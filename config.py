@@ -6,3 +6,11 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or \
         'sqlite:///' + os.path.join(basedir, 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    #Experiment parameters
+    MODE_CHOICES = ['single', 'mp', 'mixed']
+    MODEL_CHOICES = ['gspf', 'mcmf', 'rnh', 'ihf']
+    CC_CHOICES = ['cubic']
+    DISTRIBUTION_CHOICES = ['weibull', 'uniform', 'normal']
+
+    PROTOCOL_CHOICES = ['mptcp', 'fdmp']

@@ -1,5 +1,6 @@
 from app import app, db, socketio
-from app.models import User, Server, VM, Experiment
+from app.models import User, Server, VM
+from app.experiment.ExperimentModel import Experiment
 
 @app.shell_context_processor
 def make_shell_context():

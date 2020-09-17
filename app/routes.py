@@ -5,8 +5,9 @@ from app.forms import LoginForm, RegistrationForm, EditProfileForm, ServerAddFor
 from app.forms import ServerDeleteForm, ServerEditForm
 from app.forms import ConnectionAddForm, ConnectionDeleteForm
 from app.forms import VMAddForm, VMDeleteForm, VMEditForm
+from app.forms import ExperimentAddForm
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Experiment, Server, ServerInterface, ServerConnection, VM
+from app.models import User, Server, ServerInterface, ServerConnection, VM, Experiment
 from werkzeug.urls import url_parse
 from datetime import datetime
 from app.telebot.mastermind import bot
@@ -79,6 +80,11 @@ def register():
 def exp_info(experimentid):
     exp = Experiment.query.filter_by(id=experimentid).first_or_404()
     return render_template('experiment.html', experiment=exp)
+
+@app.route('/experiments')
+@login_required
+def experiments():
+    return render_template('experiments.html', title='Эксперименты')
 
 @app.route('/user/<username>')
 @login_required
@@ -201,6 +207,91 @@ def updateInterfaceState(msg):
 def get_identity_file(servername):
     return "~/.ssh/fdmp_stand"
 
+def make_list(s):
+    a = eval(s)
+    if (type(a) != type(list()) and type(a) != type(tuple())):
+        a = [a]
+    return a
+
+def find_probe(x):
+    return len(Experiment.query.filter_by(
+                mode = x[0],
+                model = x[1],
+                subflow = x[2],
+                cc = x[3],
+                distribution = x[4],
+                topo = x[5],
+                poles = x[6],
+                flows = x[7],
+                poles_seed = x[8],
+                routes_seed = x[9],
+                protocol = x[10],
+                time = x[11]).all())
+
+
+def generate_experiments(form):
+    import itertools
+
+    new_experiments = []
+
+    time_list = [int(form.time.data)]
+    print(type(time_list))
+    print(time_list)
+    print(time_list[0])
+    for x in itertools.product(
+            form.mode.data,
+            form.model.data,
+            make_list(form.subflow.data),
+            form.cc.data,
+            form.distribution.data,
+            form.topos.data,
+            make_list(form.poles.data),
+            make_list(form.flows.data),
+            make_list(form.poles_seed.data),
+            make_list(form.routes_seed.data),
+            form.protocol.data,
+            make_list(form.time.data)
+            ):
+        #checks?
+        
+        #find the number of similar experiments
+        max_probe = find_probe(x)
+        for i in range(int(form.probe.data)):
+            experiment = Experiment(
+                    mode = x[0],
+                    model = x[1],
+                    subflow = x[2],
+                    cc = x[3],
+                    distribution = x[4],
+                    topo = x[5],
+                    poles = x[6],
+                    flows = x[7],
+                    poles_seed = x[8],
+                    routes_seed = x[9],
+                    protocol = x[10],
+                    time = x[11],
+                    probe = max_probe + i,
+                    completed = False)
+            new_experiments.append(experiment)
+
+    return new_experiments
+
+        
+    
+
+@app.route('/experiment_add', methods=['GET', 'POST'])
+@login_required
+def experiment_add():
+    form = ExperimentAddForm()
+
+    if form.validate_on_submit():
+        exps = generate_experiments(form)
+        for exp in exps:
+            db.session.add(exp)
+        db.session.commit()
+        flash('Эксперименты в количестве {} были успешно добавлены'.format(len(exps)))
+        return redirect(url_for('experiments'))
+    return render_template('experiment_add.html', title='Добавление серии экспериментов', form=form)
 
 @app.route('/server_add', methods=['GET', 'POST'])
 @login_required
