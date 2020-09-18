@@ -1,4 +1,4 @@
-from app import app, db, socketio
+from app import app, db, socketio, tester
 from app.models import User, Server, VM
 from app.experiment.ExperimentModel import Experiment
 

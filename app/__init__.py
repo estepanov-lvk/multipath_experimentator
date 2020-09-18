@@ -9,6 +9,8 @@ from flask_socketio import SocketIO, emit
 from logging.handlers import RotatingFileHandler
 import os, logging
 
+from app.experiment.tester import Tester
+
 app = Flask(__name__)
 app.config.from_object(Config)
 db = SQLAlchemy(app)
@@ -17,6 +19,8 @@ login = LoginManager(app)
 login.login_view = 'login'
 bootstrap = Bootstrap(app)
 socketio = SocketIO(app, logger=True)
+tester = Tester()
+tester.start()
 
 if __name__=='__main__':
     socketio.run(app, debug=True)

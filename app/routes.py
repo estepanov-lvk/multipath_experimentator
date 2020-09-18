@@ -1,6 +1,6 @@
 from flask import render_template, redirect, flash, url_for
 from flask import request
-from app import app, db
+from app import app, db, tester
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, ServerAddForm
 from app.forms import ServerDeleteForm, ServerEditForm
 from app.forms import ConnectionAddForm, ConnectionDeleteForm
@@ -84,7 +84,8 @@ def exp_info(experimentid):
 @app.route('/experiments')
 @login_required
 def experiments():
-    return render_template('experiments.html', title='Эксперименты')
+    exps = tester.waiting_experiments()
+    return render_template('experiments.html', title='Эксперименты', exps=exps)
 
 @app.route('/user/<username>')
 @login_required
@@ -158,6 +159,13 @@ def makeServerStateInfo(server):
         "serverName": server.servername,
         "serverState": server.state
     }
+
+@socketio.on('updateTesterState', namespace='/test')
+def updateTesterState(msg):
+    reply = tester.form_state()
+    emit('updatedTesterState', reply)
+    print("update tester state")
+
 
 @socketio.on('updateServerState', namespace='/test')
 def updateServerState(msg):

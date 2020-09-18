@@ -214,7 +214,7 @@ class ExperimentAddForm(FlaskForm):
 
     protocol_choices_list = Config.PROTOCOL_CHOICES
     protocol_choices = [(x, x) for x in protocol_choices_list]
-    protocol = MultiCheckboxField("Распределение времени старта потоков", choices = protocol_choices)
+    protocol = MultiCheckboxField("Протокол", choices = protocol_choices)
 
     topos_choices = generate_topos_choices()
     topos = MultiCheckboxField("Топологии", choices = topos_choices)
