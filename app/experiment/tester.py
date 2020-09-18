@@ -37,5 +37,9 @@ class Tester:
     def start(self):
         if not self.running:
             self.running = True
-            asyncio.run(self.run_experiments())
+            
+            #add backward compatibility with python 3.5
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(self.run_experiments())
 
