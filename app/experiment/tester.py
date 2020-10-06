@@ -8,44 +8,26 @@ STAGES = [
 ]
 
 def restart_domain(vm):
-    print("START RESTART DOMAIN")
-    #from app.stand.connections import conn_config
+    from app.models import Server
 
-    @fabric.task
-    def restart_remote_domain(domain):
-        print("Running command pwd")
-        fabric.api.run('pwd')
-        print("Trying to reset VM")
-        if fabric.api.run('virsh reset {}'.format(domain)).failed:
+    def restart_remote_domain(c, domain):
+        if c.run('virsh reset {}'.format(domain)).failed:
             raise RuntimeError('Failed to reset VM!')
 
-    @fabric.task
     def wait_remote_vm(c):
-        with fabric.api.settings(
-            connection_attempts=10,
-            timeout=3,
-        ):
-            if fabric.api.run('uptime').failed:
-                raise RuntimeError('Failed to connect VM!')
+        c.run('uptime')
 
-    #with fabric.api.hide('everything'):
     try:
-        print("haha")
-        print(vm.vmname)
-        c = fabric.connection.Connection(host = vm.vmname, config = conn_config)
-        #host, domain = vm_config.vm_allocation[vm]
-        #print(vm_config.user_alias[host])
-        print(c)
-        c.run(restart_remote_domain)
-        #fabric.api.execute(restart_remote_domain, domain, hosts=vm_config.user_alias[host])
-        #fabric.api.execute(wait_remote_vm, hosts=vm_config.user_alias[vm])
+        servername = Server.query.filter_by(id = vm.server_id).all()[0].servername
+        c_server = fabric.connection.Connection(host = servername, config = conn_config)
+        c_client = fabric.connection.Connection(host = vm.vmname, config = conn_config, connect_timeout = 0)
+
+        restart_remote_domain(c_server, vm.vmname)
+        wait_remote_vm(c_client)
     except SystemExit as e:
         print('Failed to restart domain! Wait_remote_vm')
         print(e)
         raise
-
-def test(arg):
-    print("test ")
 
 class Runner:
     def __init__(self, test):
@@ -54,13 +36,15 @@ class Runner:
 
     def restart_vms(self):
         from app.models import VM
+
+        self.tester.current_stage = STAGES[0]
+        self.tester.send_state_update()
         try:
             vms = VM.query.all()
             self_args = [self for x in vms]
             with concurrent.futures.ThreadPoolExecutor(len(vms)) as executor:
-                #executor.map(restart_domain, vms)
-                #executor.map(test, vms)
-                restart_domain(vms[0])
+                res = executor.map(restart_domain, vms)
+                res = list(res)
         except BaseException as e:
             print('Failed to restart vms!')
             print(e)
@@ -70,16 +54,25 @@ class Runner:
 
     def run(self, exp):
         self.restart_vms()
+        self.tester.send_state_update()
 
 class Tester:
     queue = list()
 
     def __init__(self):
         from app.models import Experiment
+        from app import socketio
+
         exps = Experiment.query.filter_by(completed = False).all()
 
         #TODO: sorting
         self.queue = exps
+        self.socketio = socketio
+
+        @self.socketio.on('update', namespace='/experiment_state')
+        def updateExperimentState(msg):
+            self.socketio.emit('msg', self.form_state(), namespace='/experiment_state')
+            print("Update Experiment STATE !!!!!!!!!!!!!!!!!")
 
         self.running = False
         self.current_experiment = -1
@@ -96,12 +89,21 @@ class Tester:
         state_msg['current_stage'] = self.current_stage
         return state_msg
 
+    def send_state_update(self):
+        from flask_socketio import emit
+        #self.socketio.emit(self.form_state(), namespace='/experiment_state')
+        self.socketio.emit('msg', self.form_state(), namespace='/experiment_state')
+        #emit('update', self.form_state(), broadcast=True, include_self=False)
+
     async def run_experiments(self):
         print("Async run of run")
         self.current_experiment = self.queue[0]
         self.current_stage = STAGES[0]
         self.runner.run(self.current_experiment)
-        pass
+
+    def start_in_thread(self, loop):
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(self.run_experiments())
 
     def start(self):
         if not self.running:
@@ -110,6 +112,9 @@ class Tester:
             #add backward compatibility with python 3.5
             #TODO check loops
             loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(self.run_experiments())
+            
+            import threading
+            t = threading.Thread(target = self.start_in_thread, args = (loop, ))
+            t.start()
+
 

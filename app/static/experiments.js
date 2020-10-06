@@ -1,6 +1,7 @@
 "use strict"
 
 let socket = null;
+let exp_socket = null;
 
 function updateTesterStateTable(msg) {
     let a = document.getElementById('curr_exp_id');
@@ -13,12 +14,20 @@ function updateTesterStateTable(msg) {
 
 }
 
+function updateExperimentState(msg) {
+    console.log("Received experiment state")
+    console.log(msg.current_stage)
+}
+
 // Client Side Javascript to receive server and interface state.
 $(document).ready(function(){
     // start up the SocketIO connection to the server - the namespace 'test' is also included here if necessary
     socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
+    exp_socket = io.connect('http://' + document.domain + ':' + location.port + '/experiment_state');
     // this is a callback that triggers when the "my response" event is emitted by the server.
     socket.on('updatedTesterState', updateTesterStateTable);
+    exp_socket.on('msg', updateExperimentState);
+    exp_socket.emit('update', {});
     //socket.on('updatedInterfacesState', updateInterfaceTable);
     //socket.on('updatedVMState', updateVMStateTable);
 

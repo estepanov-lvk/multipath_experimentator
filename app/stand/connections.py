@@ -8,7 +8,7 @@ conn_config.load_ssh_config()
 def make_ssh_config(filename):
     import sys
     # TODO: make it more universal
-    sys.path.append("/home/evgeniy/msu/aspirantura/disser/codespace/experimentator/")
+    sys.path.append("/home/fdmp/experimentator")
     import textwrap
     from app.stand.server_model import Server
     from app.models import VM
