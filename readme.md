@@ -14,6 +14,8 @@ pip install PySocks
 pip install flask_socketio
 pip install fabric
 pip install textwrap3
+pip install numpy
+pip3 install networkx==1.11
 
 
 RUN:

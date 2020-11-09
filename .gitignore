@@ -5,3 +5,4 @@ logs
 configs
 *.swp
 app/stand/ssh_config
+route_config.json

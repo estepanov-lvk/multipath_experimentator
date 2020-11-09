@@ -17,6 +17,12 @@ function updateTesterStateTable(msg) {
 function updateExperimentState(msg) {
     console.log("Received experiment state")
     console.log(msg.current_stage)
+    let a = document.getElementById('curr_exp_id');
+    a.href = '/experiment/' + msg.current_experiment;
+    a.text = msg.current_experiment;
+
+    let stage = document.getElementById('exp_stage');
+    stage.innerHTML = msg.current_stage;
 }
 
 // Client Side Javascript to receive server and interface state.

@@ -2,14 +2,212 @@ import asyncio
 import concurrent.futures
 import fabric
 from app.stand.connections import conn_config
+import numpy
+import pickle
+import json
+import networkx
 
 STAGES = [
     "Перезагрузка виртуальных машин (1/9)",
+    "Очистка топологии (2/9)",
+    "Разворачивание топологии (3/9)",
+    "Ожидание старта виртуальных машин (4/9)",
+    "Настройка виртуальных машин (5/9)",
+    "Очистка старых результатов (6/9)",
+    "Старт сбора статистики (7/9)",
+    "Запуск потоков (8/9)",
+    "Сбор результатов (9/9)",
     "Эксперимент завершился успешно"
 ]
 
-RUN_TIMEOUT = 20
+RUN_TIMEOUT = 2000
 RESTART_VMS_TIMEOUT = 50
+
+#TODO move IFMAP to models
+IF_MAP = { #interfaces on head to loaders 
+    'fdmp_at_w1loader1-clone': 'enp13s0f0', 
+    'fdmp_at_w1loader2-clone': 'enp13s0f1',
+    'fdmp_at_w1loader3-clone': 'enp15s0f1',
+    #'fdmp_at_w1loader4': 'enp15s0f1',
+    'fdmp_at_w4loader1-clone': 'enp8s0f0',
+    'fdmp_at_w4loader2-clone': 'enp131s0f0',
+    'fdmp_at_w4loader3-clone': 'enp131s0f1',
+    #'fdmp_at_w4loader4': 'enp15s0f0',
+}
+BORDER_SWITCH = 1234
+
+USER_MAP = {
+    "head": 'arccn',
+    "w1": 'arccn',
+    "w4": 'fdmp',
+    "w1loader1-clone": 'fdmp',
+    "w1loader2-clone": 'fdmp',
+    "w1loader3-clone": 'fdmp',
+    #"w1loader4": 'fdmp',
+    "w4loader1-clone": 'fdmp',
+    "w4loader2-clone": 'fdmp',
+    "w4loader3-clone": 'fdmp',
+    #"w4loader4": 'fdmp',
+}
+
+
+# head - where topology is
+# w1, w2, ..., w4 - where loaders are
+# loader1, ... - VM for load
+class VMConfig(object):
+    def __init__(self):
+        self.hosts = {
+            'head': '172.30.2.1',
+
+            'w1': '172.30.2.11',
+            'w4': '172.30.2.14',
+
+            'w1loader1-clone': '172.30.2.111',
+            'w1loader2-clone': '172.30.2.112',
+            'w1loader3-clone': '172.30.2.113',
+            #'w1loader4': '172.30.2.114',
+            'w4loader1-clone': '172.30.2.141',
+            'w4loader2-clone': '172.30.2.142',
+            'w4loader3-clone': '172.30.2.143',
+            #'w4loader4': '172.30.2.144',
+        }
+        self.vm_allocation = {
+            'w1loader1-clone': ['w1', 'w1loader1-clone'], #or is it username?
+            'w1loader2-clone': ['w1', 'w1loader2-clone'],
+            'w1loader3-clone': ['w1', 'w1loader3-clone'],
+            #'w1loader4': ['w1', 'w1loader4'],
+            'w4loader1-clone': ['w4', 'w4loader1-clone'],
+            'w4loader2-clone': ['w4', 'w4loader2-clone'],
+            'w4loader3-clone': ['w4', 'w4loader3-clone'],
+            #'w4loader4': ['w4', 'w4loader4'],
+            
+            
+        }
+        self.vm_data_if = {
+            'w1loader1-clone': ['ens9', '10.1.1.1'],
+            'w4loader1-clone': ['ens9', '10.1.1.2'],
+            'w1loader2-clone': ['ens9', '10.2.1.1'],
+            'w4loader2-clone': ['ens9', '10.2.1.2'],
+            'w1loader3-clone': ['ens9', '10.3.1.1'],
+            'w4loader3-clone': ['ens9', '10.3.1.2'],
+            #'w1loader4': ['ens9', '10.4.1.1'],
+            #'w4loader4': ['ens9', '10.4.1.2'],
+            
+            
+        }
+        self.vm_qos_classes = {
+            133 : ['w1loader1-clone'], #kbps
+            1200 : ['w4loader1-clone'],
+            500 : ['w1loader2-clone'],
+            2750 : ['w4loader2-clone'],
+            800 : ['w1loader3-clone'],
+            5000 : ['w4loader3-clone'],
+        }
+        self.vm_flow_share = {
+            'w1loader1-clone' : 0.01, # <144p
+            'w1loader2-clone' : 0.1, # 144-240p
+            'w1loader3-clone' : 0.1, # 240-360p
+            'w4loader1-clone' : 0.2, # 360-480p
+            'w4loader2-clone' : 0.4, # 480-720p
+            'w4loader3-clone' : 0.2  # >720p
+        }
+        self.vm_transfer_size = {
+            41562500 : ['w1loader1-clone'],
+            156250000 : ['w1loader2-clone'],
+            250000000 : ['w1loader3-clone'],
+            375000000 : ['w4loader1-clone'],
+            859375000 : ['w4loader2-clone'],
+            1562500000 : ['w4loader3-clone'],
+            #100000000 : ['w1loader1-clone', 'w4loader1-clone'],
+            #100000000 : ['w1loader2-clone', 'w4loader2-clone'],
+            #100000000 : ['w1loader3-clone', 'w4loader3-clone'],
+        }
+        self.vm_bitrate = {
+            'w1loader1-clone': 133000, 
+            'w1loader2-clone': 500000,
+            'w1loader3-clone': 800000,
+            'w4loader1-clone': 1200000,
+            'w4loader2-clone': 2750000, #bits/sec
+            'w4loader3-clone': 5000000,
+        }
+        self.username = USER_MAP
+        self.user_alias = {x: '{}_at_{}'.format(self.username[x], x) for x in self.hosts.keys()}
+        self.root_alias = {x: 'root_at_{}'.format(x) for x in self.hosts.keys()}
+
+    def make_ssh_config(self, filename):
+        entries = []
+        for host, ip in sorted(self.hosts.items()):
+            host_status = 'vm' if host in self.vm_allocation else 'server'
+            identity = '~/.ssh/fdmp/{}@{}'.format(self.username[host], host)
+            entries.append((self.user_alias[host], ip, self.username[host], identity))
+            identity = '~/.ssh/fdmp/root@{}'.format(host)
+            entries.append((self.root_alias[host], ip, 'root', identity))
+
+        with open(filename, 'wt') as fd:
+            for x in entries:
+                fd.write(
+                    textwrap.dedent("""
+                        Host {}
+                            Hostname {}
+                            User {}
+                            IdentityFile {}
+                    """).format(*x)
+                )
+
+
+vm_config = VMConfig()
+
+def genNormal(duration, subflows, seed):
+    numpy.random.seed(seed)
+    mu, sigma = duration/2, 10
+    s = numpy.random.normal(mu, sigma, subflows)
+    difference = max(s) + 3
+    coef = duration / difference
+    newList = []
+    for elem in s:
+        newList.append(elem * coef)
+    return newList
+
+def genWeibull(duration, subflows, seed):
+    a = 5.
+    numpy.random.seed(seed)
+    s = numpy.random.weibull(a, subflows)
+    difference = max(s) + 3
+    coef = duration / difference
+    newList = []
+    for elem in s:
+        newList.append(elem * coef)
+    return newList
+
+def genUniform(duration, subflows, seed):
+    numpy.random.seed(seed)
+    s = numpy.random.uniform(0.0, duration, subflows)
+    difference = max(s) + 3
+    coef = duration / difference
+    newList = []
+    for elem in s:
+        newList.append(elem * coef)
+    return newList
+
+def genStatic(subflows):
+    s = []
+    for i in range(subflows):
+        s.append(0.0)
+    return s
+
+
+def getDistr(distr, duration, subflows, seed):
+    resultArray = []
+    if (distr.lower() == "normal"):
+        resultArray = genNormal(duration, subflows, seed)
+    elif (distr.lower() == "weibull"):
+        resultArray = genWeibull(duration, subflows, seed)
+    elif (distr.lower() == "uniform"):
+        resultArray = genUniform(duration, subflows, seed)
+    elif (distr.lower() == "static"):
+        resultArray = genStatic(subflows)
+    return resultArray
+
 
 def restart_domain(vm):
     from app.models import Server
@@ -60,6 +258,400 @@ def wait_domain(vm):
         print(e)
         raise
 
+def start_topology(exp):
+    model = ''
+    subnum = exp.subflow
+    topo = "topo/" + exp.topo
+    active = '--active {} {}'.format(exp.poles, exp.poles_seed)
+    #TODO check parameters
+    if exp.model in ['mcmf', 'gspf']:
+        model = '--sliced {} --rules_dump {}_rules.dump'.format(
+                    subnum,
+                    exp.model)
+    else:
+        model = '--ecmp {}'.format(exp.model)
+
+    from app.models import Server
+
+    head = Server.query.filter_by(servername = 'head').all()[0]
+    head_user = head.username
+    #TODO: make topology on right user
+    head_user = 'fdmp'
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./run_1st.py -b {} {} {}"'.format(
+                    head_user,
+                    topo,
+                    active,
+                    model)).failed:
+        raise RuntimeError('Failed on run 1st!')
+
+def set_qos(exp):
+    from app.models import Server
+    #TODO make it in config or parameters of experiment
+    RATE = 1000 #Mbps
+    RTT = 2 #ms
+
+    head = Server.query.filter_by(servername = 'head').all()[0]
+    head_user = head.username
+    #TODO: make topology on right user
+    head_user = 'fdmp'
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./set_qos.py --link_opts rate={},loss=10,rtt={},jitter=0"'.format(
+                    head_user, RATE, RTT)).failed:
+        raise RuntimeError('Failed on set qos')
+
+def setup_multiloader(loader_pairs, exp):
+    import io
+    subnum = exp.subflow
+    result_config = '{{\n"subnum": {},\n"connections":[\n'.format(subnum)
+    for loader in loader_pairs:
+            result_config += '{{\n\t\t"client_ports": "{}-{}",\n'\
+                                '\t\t"client_if": "{}",\n'\
+                                '\t\t"server_if": "{}",\n'\
+                                '\t\t"server_ip": "{}"\n'\
+                                '}},\n'.format(loader['client_ports'], 
+                                            loader['client_ports'] + loader['client_flows'] - 1,
+                                            IF_MAP[loader['remote_client_name']],
+                                            IF_MAP[loader['remote_server_name']],
+                                            loader['server_ip'])
+    result_config = result_config[:-2]
+    result_config += '\n]\n}\n'
+
+    active = '--active {} {}'.format(exp.poles, exp.poles_seed)
+    head_user = 'fdmp'
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c.put(io.StringIO(result_config), remote='/home/{}/netbuilder/testbed.json'.format(head_user))
+        
+    if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./multiloader.py {} net.dump {} {}"'.format(head_user, active, BORDER_SWITCH, exp.routes_seed)).failed:
+        raise RuntimeError('Failed on multiloader')
+
+
+#TODO make normal QoS
+def set_bitrate_in_json():
+    print("TEST1")
+
+    with open("route_config.json") as f:
+        dump = json.load(f)
+    #qos_list = dump["qos"]
+    print("TEST2")
+    new_qos_list = []
+    for vm_name in vm_config.vm_bitrate:
+        print("vm_name=" + vm_name)
+        num1 = vm_name[1]
+        num2 = vm_name[8]
+        ip = "10." + str(num1) + ".1." + str(num2)
+        for qos_dict in dump['stand-data']['qos']:
+            if qos_dict["s_ip"] == ip:
+                qos_dict["bw"] = vm_config.vm_bitrate[vm_name] * 0.001
+                new_qos_list.append(qos_dict)
+
+    dump["stand-data"]["qos"] = new_qos_list
+    print("TEST3") 
+    with open("route_config.json", 'w') as outfile:
+        #json.dump(dump, outfile)
+        outfile.write(json.dumps(dump))
+    print(dump)
+
+
+
+
+def create_controller_config(topo, subflow, poles):
+    print(topo, subflow, poles)
+    dict1 = {}
+    dict1["name"] = "stand-data"
+    dict1["rest"] = False
+    dict1["cli"] = False
+    dict1["sub_num"] = subflow
+    dict1["seed"] = 1
+    dict1["pole_ratio"] = poles
+    dict_topo = {}
+    dict_topo["name"] = topo
+    dict_edges = {}
+    list_edges = []
+    with open("/home/fdmp/netbuilder/topo/" + topo, 'rb') as fp:
+        graph = pickle.load(fp)
+    
+    edges = graph.edges()
+    edges_filtered = []
+    for t in edges:
+        if not t in edges_filtered:
+            edges_filtered.append(t)
+    for t in edges_filtered:
+        dict_edge = {}
+        dict_edge["s_node"] = t[0]
+        dict_edge["d_node"] = t[1]
+        dict_edge["bw"] = 10
+        list_edges.append(dict_edge)
+        dict_edge = {}
+        dict_edge["s_node"] = t[1]
+        dict_edge["d_node"] = t[0]
+        dict_edge["bw"] = 10
+        list_edges.append(dict_edge)
+    dict_topo["nodes"] = graph.nodes()
+    dict_topo["edges"] = list_edges
+    dict1["topo"] = dict_topo
+    list_qos = []
+    for n in range(1, 4):
+        dict_qos = {}
+        src = "10." + str(n) + ".1.1"
+        dst = "10." + str(n) + ".1.2"
+        dict_qos["s_ip"] = src
+        dict_qos["d_ip"] = dst
+        list_qos.append(dict_qos)
+        dict_qos = {}
+        dict_qos["s_ip"] = dst
+        dict_qos["d_ip"] = src
+        list_qos.append(dict_qos)
+    dict1["qos"] = list_qos
+    str1 = '{ "services": [ "of-server", "of-server-cli", "of-server-rest", "controller", "switch-manager", "switch-manager-cli", "switch-manager-rest", "switch-ordering", "link-discovery", "link-discovery-cli", "link-discovery-rest", "recovery-manager", "recovery-manager-rest", "flow-entries-verifier", "ofmsg-sender", "stats-rules-manager", "stats-rules-manager-rest", "topology", "topology-rest", "stats-bucket-rest", "dpid-checker", "database-connector", "flow-table-rest", "group-table-rest", "meter-table-rest", "aux-devices-rest", "stand-data" ], "flow-entries-verifier": { "active": false, "poll-interval": 30000 }, "dpid-checker": { "dpid-format": "dec", "AR": [ "1", "2", "3" ], "DR": [ "1234", "4", "5", "6" ] }, "recovery-manager": { "id": 1, "status": "backup", "hb-mode": "unicast", "hb-address-primary": "127.0.0.1", "hb-port-primary": 1234, "hb-address-backup": "127.0.0.1", "hb-port-backup": 1237, "hb-port-broadcast": 50000, "hb-address-multicast": "239.255.43.21", "hb-port-multicast": 50000, "hb-interval": 200, "hb-primaryDeadInterval": 800, "hb-backupDeadInterval": 1000, "hb-primaryWaitingInterval": 600 }, "database-connector": { "db-type": "redis", "db-address": "127.0.0.1", "db-port": 6379, "db-pswd": "" }, "link-discovery": { "queue": 1, "poll-interval": 5 }, "of-server": { "address": "0.0.0.0", "port": 6653, "nthreads": 4, "echo-interval": 5, "echo-attempts": 3, "secure": false }, "rest-listener": { "address": "0.0.0.0", "port": "8000" }, "stand-data": ' + json.dumps(dict1) + "}"
+    with open('route_config.json', 'w') as outfile:
+        try:
+            outfile.write(str1)
+        except Exception as e:
+            print("Exception! " + e)
+
+
+
+def start_controller(exp):
+    create_controller_config(exp.topo, exp.subflow, exp.poles)
+    set_bitrate_in_json()
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+
+    head_c.put('route_config.json', '/home/arccn/runos/runos-settings.json')
+
+    controller_command = 'cd /home/arccn/runos; tmux new -d \\"source ~/.nix-profile/etc/profile.d/nix.sh; nix-shell --command build/runos\\"'
+    if head_c.run('bash -c "{}"'.format(controller_command)).failed:
+        raise RuntimeError('Failed on runos start')
+
+def kill_controller(exp):
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    if head_c.run('bash -c "pkill runos"').failed:
+        raise RuntimeError('Failed to kill controller process!')
+
+
+def setup_loader(exp, vm):
+    def setup_interface(vm_c, iface, ip, subnum):
+        vm_c.run('sudo -H bash -c "ifconfig {} down"'.format(iface))
+        vm_c.run('sudo -H bash -c "ip addr flush dev {}"'.format(iface))
+        for i in range(subnum):
+            new_ip = ip.split('.')
+            new_ip[2] = str(i + 1)
+            new_ip = '.'.join(new_ip)
+
+            if vm_c.run('sudo -H bash -c "ip addr add {}/24 dev {}"'.format(new_ip, iface)).failed:
+                raise RuntimeError('Failed to assign address to interface!')
+
+        if vm_c.run('sudo -H bash -c "ifconfig {} txqueuelen 8000"'.format(iface)).failed:
+            raise RuntimeError('Failed to tune txqueuelen')
+        if vm_c.run('sudo -H bash -c "ifconfig {} up"'.format(iface)).failed:
+            raise RuntimeError('Failed to set up interface!')
+        if vm_c.run('sudo -H bash -c "tc qdisc replace dev {} root handle 1: fq limit 400000"'.format(iface)).failed:
+            raise RuntimeError('Failed to set up tc')
+        return
+
+    def setup_multipath(vm_c, mp):
+        if vm_c.run('sudo -H bash -c "sysctl -w net.mptcp.mptcp_enabled={}"'.format(mp)).failed:
+            raise RuntimeError('Failed to enable MPTCP!')
+        if vm_c.run('sudo -H bash -c "sysctl -w net.mptcp.mptcp_debug=1"').failed:
+            raise RuntimeError('Failed to enable MPTCP debug')
+        tcp_mem = "sysctl -w net.ipv4.tcp_mem='16777216 16777216 16777216'"
+        if vm_c.run('sudo -H bash -c "{}"'.format(tcp_mem)).failed:
+            raise RuntimeError('Failed to tune tcp_mem')
+        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_syncookies=0"').failed:
+            raise RuntimeError('Failed to tune syn cookies')
+        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_max_syn_backlog=1024"').failed:
+            raise RuntimeError('Failed to tune tcp_max_syn_backlog')
+        if vm_c.run('sudo -H bash -c "sysctl -w net.core.somaxconn=1024"').failed:
+            raise RuntimeError('Failed to tune net.core.sorted')
+        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_syn_retries=6"').failed:
+            raise RuntimeError('Failed to set up tcp syn_retries')
+        if vm_c.run('sudo -H bash -c "sysctl -w net.mptcp.mptcp_syn_retries=5"').failed:
+            raise RuntimeError('Failed to set up mptcp syn_retries')
+
+    def setup_cc(vm_c, cc):
+        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_congestion_control={}"'.format(cc)).failed:
+            raise RuntimeError('Failed to configure congestion control!')
+
+    #TODO interfaces
+    iface, ip = vm_config.vm_data_if[vm.vmname]
+    subnum = exp.subflow
+    #TODO root? 
+    vm_c = fabric.connection.Connection(host = vm.vmname, config = conn_config)
+
+    try: 
+        # with fabric.api.hide('everything'):
+        setup_interface(vm_c, iface, ip, subnum)
+        setup_multipath(vm_c, int(exp.mode == 'mp'))
+        setup_cc(vm_c, exp.cc)
+    except SystemExit as e:
+        print("Failed to configure vm")
+        print(e)
+        raise
+
+def setLoaderQos(subflows, protocol):
+    from app.models import VM
+
+    def modifyQos(vm_c, qos):
+        if vm_c.run('sudo -H bash -c "echo {} > /proc/sys/net/fdmp/qos_req_default"'.format(qos)).failed:
+            raise RuntimeError("Failed to modify qos!")
+    
+    def modifyPathManager(vm_c):
+        if vm_c.run('sudo -H bash -c "echo default > /proc/sys/net/mptcp/mptcp_path_manager"').failed:
+            raise RuntimeError("Failed to modify path manager!")
+    def setPathManagerToMptcp(vm_c):
+        if vm_c.run('sudo -H bash -c "echo ndiffports > /proc/sys/net/mptcp/mptcp_path_manager"').failed:
+            raise RuntimeError("Failed to set path to mptcp!")
+
+    def setSubflows(vm_c, subflows):
+        if vm_c.run('sudo -H bash -c "' + 'echo ' + str(subflows) + ' > /proc/sys/net/fdmp/fdmp_subflows_num"').failed:
+            raise RuntimeError("Failed to modify subflow number!")
+    def disableFdmp(vm_c):
+        if vm_c.run('sudo -H bash -c "echo 0 > /proc/sys/net/fdmp/fdmp_enabled"').failed:
+            raise RuntimeError("Failed to disable fdmp!")
+    def enableFdmp(vm_c):
+        if vm_c.run('sudo -H bash -c "echo 1 > /proc/sys/net/fdmp/fdmp_enabled"').failed:
+            raise RuntimeError("failed to enable fdmp!")
+    
+    for key in vm_config.vm_qos_classes:
+        print(key)
+        for loader_name in vm_config.vm_qos_classes[key]:
+            #print("key = " + key + " loader name=" + loader_name)
+            vm_c = fabric.connection.Connection(host = loader_name, config = conn_config)
+            try:
+                if protocol == 'fdmp':
+                    print("PROTOCOL = FDMP")
+                    modifyQos(vm_c, key)
+                    modifyPathManager(vm_c)
+                    setSubflows(vm_c, subflows)
+                    enableFdmp(vm_c)
+                elif protocol == 'mptcp':
+                    print("PROTOCOL = MPTCP")
+                    setPathManagerToMptcp(vm_c)
+                    disableFdmp(vm_c)
+            except SystemExit as e:
+                print("Failed to execute modify qos!")
+                raise
+
+
+def start_iperf3_servers(params):
+    import textwrap
+    vm_c = fabric.connection.Connection(host = params['remote_server_name'].split('_')[-1], config = conn_config)
+    vm_c.run(' '.join(
+            textwrap.dedent('''
+                parallel
+                --no-notice
+                --xapply
+                --files
+                --results iperf3
+                --max-procs {job_number}
+                
+                /usr/local/bin/iperf3
+                --server
+                --bind {server_ip}
+                --port {{1}}
+                --one-off
+                --json
+                
+                
+                ::: {server_ports}
+            ''').splitlines()
+            ).format(
+                job_number=len(params['server_ports']),
+                server_ip=params['server_ip'],
+                server_ports=' '.join(map(str, params['server_ports'])),
+            )
+    )
+
+
+def send_distribution_files(vm_c, exp, params):
+    import io
+    for flow_num,seed,p_id in zip(params['client_flows'], params['distrSeed'], params['id']):
+        distrLines = ""
+        distrString = ""
+        flow_start_time = getDistr(exp.distribution, exp.time, exp.flows, seed)
+        for i in range(flow_num):
+            distrString += str(int(flow_start_time[i])) + " "
+        distrLines = str(exp.flows) + "\n" + distrString;
+        vm_c.put(io.StringIO(distrLines), 'distrFile{}.txt'.format(p_id))
+        print(distrLines)
+
+def start_iperf3_clients(params, exp):
+        import textwrap
+        import math
+        vm_c = fabric.connection.Connection(host = params['remote_client_name'].split('_')[-1], config = conn_config)
+         
+        print("load_flow_number=", str(exp.flows),  " kwargs client flows = ", str(params['client_flows']))
+        send_distribution_files(vm_c, exp, params)
+        
+        #QoS setup
+        client_name = params['remote_client_name']
+        transfer_str = ""
+        for key in vm_config.vm_transfer_size:
+            for vm_name in vm_config.vm_transfer_size[key]:
+                if client_name.find(vm_name) != -1:
+                    transfer_str = str(key) #+ "GB"
+        if transfer_str == "":
+            transfer_str = "100000000"
+        bitrate = ""
+        for vm_name in vm_config.vm_bitrate:
+            if client_name.find(vm_name) != -1:
+                bitrate = str(vm_config.vm_bitrate[vm_name])
+        if bitrate == "":
+            bitrate = "800000000"
+        flow_number = "1"
+        for vm_name in vm_config.vm_flow_share:
+            if client_name.find(vm_name) != -1:
+                flow_number = str(math.ceil(exp.flows * vm_config.vm_flow_share[vm_name]))
+        if int(flow_number) == 0:
+            flow_number = "1"
+        result = vm_c.run(' '.join(
+            textwrap.dedent('''
+                parallel
+                --no-notice
+                --xapply
+                --files
+                --results iperf3
+                --max-procs {flows}
+            
+                /usr/local/bin/iperf3
+                --client {server_ip}
+                --port {{1}}
+                --cport {{2}}
+                --bind {client_ip}
+                -n {transfer_str}
+                --parallel {{3}}
+                -b {bitrate}
+                --json
+                -E /home/fdmp/distrFile{{4}}.txt
+                
+                
+                ::: {server_ports}
+                ::: {client_ports}
+                ::: {client_flows}
+                ::: {ids}
+            ''').splitlines()
+            ).format(
+                #job_number=len(kwargs['client_ports']),
+                #job_number=len(kwargs['server_ports']),
+                #job_number=128,
+                flows=flow_number,
+                server_ip=params['server_ip'],
+                server_ports=' '.join(map(str, params['server_ports'])),
+                client_ip=params['client_ip'],
+                client_ports=' '.join(map(str, params['client_ports'])),
+                transfer_str=transfer_str,
+                client_flows=' '.join(map(str, params['client_flows'])),
+                bitrate=bitrate,
+		ids = ' '.join(map(str, params['id'])),
+                #exp_length=test_case['time_amount'],
+            )
+        )
+        #print("after parrallel {1} {2}".format(kwargs['server_ip'], kwargs['client_ip']))
+        if result.failed:
+            raise RuntimeError(result.stderr)
+        return result
+
+
 
 def stop_process_pool(executor):
     for pid, process in executor._processes.items():
@@ -67,10 +659,148 @@ def stop_process_pool(executor):
     executor.shutdown()
 
 
+MAX_PAIRS = 3
+
+#DEBUG
+def print_loader_pairs(loader_pairs):
+    for lp in loader_pairs:
+            print(lp)
+            print("")
+
+#TODO make using VM database
+def get_remote_server_name(pair_number):
+    base_str = 'fdmp_at_w4loader{}-clone'
+    return base_str.format((pair_number // 2) % MAX_PAIRS + 1)
+    
+
+def get_remote_client_name(pair_number):
+    base_str = 'fdmp_at_w1loader{}-clone'
+    return base_str.format((pair_number // 2) % MAX_PAIRS + 1)
+
+
+def unite_loaders(loader_pairs):
+    unique_pairs = {}
+    for lp in loader_pairs:
+        if lp['server_ip'] not in unique_pairs:
+            unique_pairs[lp['server_ip']] = lp
+            unique_pairs[lp['server_ip']]['server_ports'] = [lp['server_ports'],]
+            unique_pairs[lp['server_ip']]['client_ports'] = [lp['client_ports'],]
+            unique_pairs[lp['server_ip']]['client_flows'] = [lp['client_flows'],]
+            unique_pairs[lp['server_ip']]['id'] = [lp['id'],]
+            unique_pairs[lp['server_ip']]['distrSeed'] = [lp['distrSeed'],]
+        else:
+            unique_pairs[lp['server_ip']]['server_ports'].append(lp['server_ports'])
+            unique_pairs[lp['server_ip']]['client_ports'].append(lp['client_ports'])
+            unique_pairs[lp['server_ip']]['client_flows'].append(lp['client_flows'])
+            unique_pairs[lp['server_ip']]['id'].append(lp['id'])
+            unique_pairs[lp['server_ip']]['distrSeed'].append(lp['distrSeed'])
+
+    return list(unique_pairs.values())
+
+ 
+
 class Runner:
     def __init__(self, test):
         self.tester = test
         self.current_stage = 0
+
+   
+    def generate_loader_pairs(self, nflows):
+        # assume nflows to divide by 128
+        print('-------------------------------')
+        print('nflows = {}'.format(nflows))
+        loaders = []
+
+        #TODO: check
+        self.server_ports_offset = 7000
+        self.client_ports_offset = 11001
+        self.server_ports_offset_list = []
+        self.client_ports_offset_list = []
+        i = 0
+        seedBase = 15000
+        while nflows > 0:
+                 self.server_ports_offset_list.append((self.server_ports_offset % 65535) + 10*i) #TODO check i and offset list purpose
+                 self.client_ports_offset_list.append((self.client_ports_offset % 65535) + 1000*i)
+
+                 pair1 = {
+                     'server_ports': 7000 + 10 * (i // (2 * MAX_PAIRS)),
+                     'client_ports': 11001 + 1000 * (i // (2 * MAX_PAIRS)),
+                     'client_flows': min(128, nflows),
+                     'exp_length': 60,
+                     'id': i
+                 }
+                 nflows -= min(128, nflows)
+
+                 pair2 = dict(**pair1)
+
+                 #TODO make with vm
+                 pair1['remote_server_name'] = get_remote_server_name(i)
+                 pair1['remote_client_name'] = get_remote_client_name(i)
+                 pair1['server_ip'] = pair2['client_ip'] = '10.{}.1.2'.format((i // 2) % MAX_PAIRS + 1)
+                 pair2['server_ip'] = pair1['client_ip'] = '10.{}.1.1'.format((i // 2) % MAX_PAIRS + 1)
+                 pair1['distrSeed'] = seedBase + i
+                 pair2['distrSeed'] = seedBase + i + 1
+                 loaders.append(pair1)
+
+                 if nflows > 0:
+                    pair2['remote_client_name'] = pair1['remote_server_name']
+                    pair2['remote_server_name'] = pair1['remote_client_name']
+                    pair2['client_flows'] = min(128, nflows)
+                    pair2['id'] = i + 1
+                    loaders.append(pair2)
+                    nflows -= min(128, nflows)
+                 i += 2
+        print_loader_pairs(loaders)
+        return loaders
+
+ #   def generate_loader_pairs(self, nflows):
+ #        # assume nflows to divide by 128
+ #        from app.models import VM
+ #        loader_pairs = len(VM.query.all()) // 2
+ #        npairs = (((nflows + 127) // 128) + 1) // (2 * loader_pairs)
+ #        if (npairs == 0): npairs += 1
+ #        print(loader_pairs)
+ #        loaders = []
+
+ #        #TODO: check
+ #        self.server_ports_offset = 7000
+ #        self.client_ports_offset = 11001
+ #        self.server_ports_offset_list = []
+ #        self.client_ports_offset_list = []
+ #        s = 0
+ #        seedBase = 15000
+ #        for i in range(loader_pairs):
+ #                print(":::::::::::NPAIRS:::::::")
+ #                print(npairs)
+ #                self.server_ports_offset_list.append([(self.server_ports_offset % 65535) + 10*x for x in range(npairs)])
+ #                self.client_ports_offset_list.append([(self.client_ports_offset % 65535) + 1000*x for x in range(npairs)])
+ #                print(self.server_ports_offset_list)
+ #                print(self.client_ports_offset_list)
+ #                #pair1 = {
+ #                #    'server_ports': server_ports_offset_list[i],
+ #                #    'client_ports': client_ports_offset_list[i],
+ #                #    'client_flows': 64, #flows
+ #                #    'exp_length': 60,
+ #                #}
+ #                pair1 = {
+ #                    'server_ports': [7000 + 10*x for x in range(npairs)],
+ #                    'client_ports': [11001 + 1000*x for x in range(npairs)],
+ #                    #'client_ports': [11001 + 10*x for x in range(1, 128)],
+ #                    'client_flows': 128,
+ #                    'exp_length': 60,
+ #                }
+ #                pair2 = dict(**pair1)
+ #                #TODO make with vm
+ #                pair1['remote_server_name'] = pair2['remote_client_name'] = 'fdmp_at_w4loader{}-clone'.format(i + 1) ## redacted -clone
+ #                pair2['remote_server_name'] = pair1['remote_client_name'] = 'fdmp_at_w1loader{}-clone'.format(i + 1) ##redacted
+ #                pair1['server_ip'] = pair2['client_ip'] = '10.{}.1.2'.format(i + 1)
+ #                pair2['server_ip'] = pair1['client_ip'] = '10.{}.1.1'.format(i + 1)
+ #                pair1['distrSeed'] = seedBase + s
+ #                pair2['distrSeed'] = seedBase + s + 1
+ #                loaders.append(pair1)
+ #                loaders.append(pair2)
+ #                s += 2
+ #        return loaders
 
     def update_stage(self):
         self.current_stage += 1
@@ -103,8 +833,144 @@ class Runner:
             print(e)
             raise
 
+    def cleanup_testbed(self, exp):
+        from app.models import Server
+
+        head = Server.query.filter_by(servername = 'head').all()[0]
+        user_head = head.username
+        #TODO: we don't need in cleanup, if the topology is same
+        try:
+            c_server = fabric.connection.Connection(host = 'head', config = conn_config)
+            #TODO setup sudo password?
+            c_server.run('sudo bash -c "cd /home/{}/netbuilder; ./delete.sh"'.format(user_head))
+        except BaseException as e:
+            print("Failed to clean up testbed!")
+            print(e)
+            raise
+
+    def deploy_testbed(self, exp):
+        #TODO; check experiment parameters (no rules for subnum 1)
+        try:
+            start_topology(exp)
+            set_qos(exp)
+            self.loader_pairs = self.generate_loader_pairs(exp.flows)
+            setup_multiloader(self.loader_pairs, exp)
+            start_controller(exp)
+        except BaseException as e:
+            print("Failed to deploy testbed!")
+            print(e)
+            raise
+
+    #TODO: move waiting from restart_vms
+    def wait_vm(self, exp):
+        pass
+
+    def setup_vms(self, exp):
+        from app.models import VM
+        try:
+            vms = VM.query.all()
+            n_processes = len(vms)
+            param_list = []
+            if exp.mode == 'mixed':
+                for num in range(n_processes):
+                    p = dict(params)
+                    if (num // 2) % 2:
+                        p['mode'] = 'single'
+                        p['subflow_per_session'] = 1
+                        p['cc_algorithm'] = 'cubic'
+                    else:
+                        p['mode'] = 'mp'
+                    param_list.append(p)
+            #TODO mixed mode
+                    
+            for vm in vms:
+                setup_loader(exp, vm)
+
+            setLoaderQos(exp.subflow, exp.protocol)
+        except BaseException as e:
+            print('Failed to setup vms!')
+            print(e)
+
+    def clean_iperf3_results(self, exp):
+        from app.models import VM
+        vms = VM.query.all()
+        for vm in vms:
+            vm_c = fabric.connection.Connection(host = vm.vmname, config = conn_config)
+            vm_c.run('rm -rf iperf3 || true')
+            vm_c.run('pkill -HUP parallel || true')
+        
+    def start_collectd(self, exp):
+        import io
+        import textwrap
+        head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+        if head_c.run('[ -f ~/collectd.pid ] && pkill -HUP --pidfile ~/collectd.pid || true').failed:
+            raise RuntimeError('Failed to stop collectd launched before!')
+        if head_c.run('rm -rf /home/fdmp/csv || true').failed:
+            raise RuntimeError('Failed to clean up csv folder!')
+        head_c.put(io.StringIO(
+                    textwrap.dedent("""
+                        interval 1
+                        LoadPlugin csv
+                        LoadPlugin interface
+                        LoadPlugin logfile
+                        <Plugin interface>
+                            Interface "/^veth*/"
+                        </Plugin>
+                        <Plugin logfile>
+                            LogLevel info
+                            File "/home/fdmp/collectd.log"
+                            Timestamp true
+                        </Plugin>
+                        <Plugin csv>
+                            DataDir "/home/fdmp/csv"
+                        </Plugin>
+                    """)),
+                    'collectd.conf'
+                )
+        if head_c.run('timeout -s9 100 collectd -C ~/collectd.conf -P ~/collectd.pid').failed:
+            raise RuntimeError('Failed to run collectd')
+
+    def run_iperf3_loaders(self, exp):
+        import time
+        import threading 
+
+        loader_pairs = unite_loaders(self.loader_pairs)
+        threads = []
+        for p in loader_pairs:
+            thr = threading.Thread(target = start_iperf3_servers, args = (p,))
+            thr.start()
+            threads.append(thr)
+        time.sleep(5)
+        for p in loader_pairs:
+            thr = threading.Thread(target = start_iperf3_clients, args = (p, exp))
+            thr.start()
+            threads.append(thr)
+            print("client has started")
+
+        for thr in threads:
+            thr.join(timeout = exp.time)
+        print("All threads have been finished")
+
+    def collect_results(self, exp):
+        try:
+                kill_controller(exp)
+        except BaseException as e:
+            print("Failed to collect results!")
+            print(e)
+            raise
+
+
+
     stages = [
         restart_vms,
+        cleanup_testbed,
+        deploy_testbed,
+        wait_vm,
+        setup_vms,
+        clean_iperf3_results,
+        start_collectd,
+        run_iperf3_loaders,
+        collect_results,
         ]
 
 
@@ -162,13 +1028,14 @@ class Tester:
         while self.queue:
                 self.current_experiment = self.queue.pop(0)
                 self.current_stage = STAGES[0]
-                #exp_thread = threading.Thread(target = self.runner.run, args = (self.current_experiment, ))
-                exp_thread = multiprocessing.Process(target = self.runner.run, args = (self.current_experiment, ))
+                exp_thread = threading.Thread(target = self.runner.run, args = (self.current_experiment, ))
+                #exp_thread = multiprocessing.Process(target = self.runner.run, args = (self.current_experiment, ))
                 exp_thread.start() 
                 exp_thread.join(timeout = RUN_TIMEOUT)
+                #TODO: process hanging experiments
                 if exp_thread.is_alive():
                     print("EXIT of EXPERIMENT due to TIMEOUT")
-                    exp_thread.terminate()
+                    #exp_thread.terminate()
                 print("Len of queue: {}".format(len(self.queue)))
                 # for DEBUG
                 break
