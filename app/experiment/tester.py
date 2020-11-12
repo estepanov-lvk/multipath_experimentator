@@ -479,7 +479,7 @@ def setup_loader(exp, vm):
     vm_c = fabric.connection.Connection(host = vm.vmname, config = conn_config)
 
     try: 
-        # with fabric.api.hide('everything'):
+        # with head_c.hide('everything'):
         setup_interface(vm_c, iface, ip, subnum)
         setup_multipath(vm_c, int(exp.mode == 'mp'))
         setup_cc(vm_c, exp.cc)
@@ -487,6 +487,48 @@ def setup_loader(exp, vm):
         print("Failed to configure vm")
         print(e)
         raise
+
+def collect_collectd_results(result_directory):
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    try:
+        if head_c.run('pkill -HUP --pidfile ~/collectd.pid').failed:
+            raise RuntimeError('Failed to stop collectd!')
+        if head_c.run('tar -czf csv.tar.gz /home/fdmp/csv').failed:
+            raise RuntimeError('Failed to archive collectd results!')
+        head_c.get('csv.tar.gz', '{}/csv.tar.gz'.format(result_directory))
+        if head_c.run('rm -rf /home/fdmp/csv').failed:
+            raise RuntimeError('Failed to remove collected data directory!')
+        if head_c.run('rm -rf csv.tar.gz').failed:
+            raise RuntimeError('Failed to remove collected data archive!')
+    except SystemExit as e:
+        print("Failed to collect results")
+        print(e)
+        raise
+
+
+def collect_iperf3_results(result_directory, loader_pairs):
+    def collect_remote_iperf3_results(result_directory, vmname):
+        from pathlib import Path
+        vm_c = fabric.connection.Connection(host = vmname, config = conn_config)
+        if vm_c.run('tar -czf iperf3.tar.gz iperf3').failed:
+            raise RuntimeError('Failed to archive iperf3 results!')
+        Path('{}/iperf'.format(result_directory)).mkdir(parents=True, exist_ok=True)
+        vm_c.get('iperf3.tar.gz', '{}/iperf/{}.tar.gz'.format(result_directory, vmname))
+        if vm_c.run('rm -rf iperf*').failed:
+            raise RuntimeError('Failed to remove collected data!')
+
+    servers = set(x['remote_server_name'] for x in loader_pairs)
+    clients = set(x['remote_client_name'] for x in loader_pairs)
+    hosts=list(servers | clients)
+    try:
+        for host in hosts:
+            collect_remote_iperf3_results(result_directory, host.split('_')[-1])
+    except SystemExit as e:
+        print("Failed to collect results")
+        print(e)
+        raise
+
+
 
 def setLoaderQos(subflows, protocol):
     from app.models import VM
@@ -952,8 +994,14 @@ class Runner:
         print("All threads have been finished")
 
     def collect_results(self, exp):
+        from pathlib import Path
         try:
+                results_directory = 'results/' + exp.sha_hash()
+                Path(results_directory).mkdir(parents=True, exist_ok=True)
+                loader_pairs = unite_loaders(self.loader_pairs)
                 kill_controller(exp)
+                collect_collectd_results(results_directory)
+                collect_iperf3_results(results_directory, loader_pairs)
         except BaseException as e:
             print("Failed to collect results!")
             print(e)

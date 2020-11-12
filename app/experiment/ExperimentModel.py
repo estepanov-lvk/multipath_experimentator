@@ -21,6 +21,25 @@ class Experiment(db.Model):
     def __repr__(self):
         return '<Experiment {}>'.format(self.id)
 
+    def sha_hash(self):
+        import hashlib
+
+        unique_str = ''
+        unique_str += str(self.mode)
+        unique_str += str(self.model)
+        unique_str += str(self.subflow)
+        unique_str += str(self.topo)
+        unique_str += str(self.poles)
+        unique_str += str(self.flows)
+        unique_str += str(self.poles_seed)
+        unique_str += str(self.routes_seed)
+        unique_str += str(self.cc)
+        unique_str += str(self.protocol)
+        unique_str += str(self.distribution)
+        unique_str += str(self.time)
+        unique_str += str(self.probe)
+        return hashlib.sha1(unique_str.encode()).hexdigest()
+
 class Topo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(30), index = True, unique=True)
