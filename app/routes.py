@@ -98,6 +98,20 @@ def exp_del(experimentid):
     return redirect(url_for('results'))
 
 
+@app.route('/result_remove/<experimentid>')
+@login_required
+def res_del(experimentid):
+    import shutil
+    exp = Experiment.query.filter_by(id=experimentid).first_or_404()
+
+    #remove the results directory
+    result_directory = "results/" + exp.sha_hash()
+    shutil.rmtree(result_directory, ignore_errors=True)
+
+    exp.completed = False
+    db.session.commit()
+    return redirect(url_for('results'))
+
 @app.route('/experiments')
 @login_required
 def experiments():

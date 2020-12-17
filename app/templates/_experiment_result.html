@@ -3,5 +3,6 @@
     <td>{{ exp.topo }}</td>
     <td>{{ exp.protocol }}</td>
     <td>{{ exp.flows }}</td>
-    <td><a href="{{ url_for('exp_del', experimentid=exp.id) }}">Удалить</a></td>
+    <td><a href="{{ url_for('exp_del', experimentid=exp.id) }}">Удалить</a>
+        <a href="{{ url_for('res_del', experimentid=exp.id) }}">Очистить результаты</a></td>
 </tr>
