@@ -81,6 +81,23 @@ def exp_info(experimentid):
     exp = Experiment.query.filter_by(id=experimentid).first_or_404()
     return render_template('experiment.html', experiment=exp)
 
+@app.route('/experiment_remove/<experimentid>')
+@login_required
+def exp_del(experimentid):
+    import shutil
+    exp = Experiment.query.filter_by(id=experimentid).first_or_404()
+    
+    #remove the results directory
+    result_directory = "results/" + exp.sha_hash()
+    shutil.rmtree(result_directory, ignore_errors=True)
+
+    #remove experiments from database
+    db.session.delete(exp)
+    db.session.commit()
+
+    return redirect(url_for('results'))
+
+
 @app.route('/experiments')
 @login_required
 def experiments():
