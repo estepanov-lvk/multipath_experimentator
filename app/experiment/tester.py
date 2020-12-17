@@ -112,7 +112,7 @@ class VMConfig(object):
             'w4loader3-clone' : 0.2  # >720p
         }
         self.vm_transfer_size = {
-            41562500 : ['w1loader1-clone'],
+            415625 : ['w1loader1-clone'],
             156250000 : ['w1loader2-clone'],
             250000000 : ['w1loader3-clone'],
             375000000 : ['w4loader1-clone'],
@@ -663,6 +663,7 @@ def start_iperf3_clients(params, exp):
                 -n {transfer_str}
                 --parallel {{3}}
                 -b {bitrate}
+                -l 10000
                 --json
                 -E /home/fdmp/distrFile{{4}}.txt
                 
@@ -1085,6 +1086,12 @@ class Tester:
                     print("EXIT of EXPERIMENT due to TIMEOUT")
                     #exp_thread.terminate()
                 print("Len of queue: {}".format(len(self.queue)))
+
+                from app import db
+                self.current_experiment.completed = True
+                local_object = db.session.merge(self.current_experiment)
+                db.session.add(local_object)
+                db.session.commit()
                 # for DEBUG
                 break
 

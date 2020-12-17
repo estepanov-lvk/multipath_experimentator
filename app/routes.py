@@ -87,6 +87,21 @@ def experiments():
     exps = tester.waiting_experiments()
     return render_template('experiments.html', title='Эксперименты', exps=exps)
 
+@app.route('/result/<experimentid>')
+@login_required
+def exp_result(experimentid):
+    from app.experiment.grabber import analyze_results
+    exp = Experiment.query.filter_by(id=experimentid).first_or_404()
+    flows = analyze_results(exp.sha_hash())
+    return render_template('result.html', experiment=exp, flows = flows)
+
+@app.route('/results')
+@login_required
+def results():
+    exps = Experiment.query.filter_by(completed = True).all()
+    return render_template('results.html', title='Результаты', exps=exps)
+
+
 @app.route('/user/<username>')
 @login_required
 def user(username):

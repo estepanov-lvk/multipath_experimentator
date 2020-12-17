@@ -25,6 +25,7 @@
                     <li><a href="{{ url_for('index') }}">Главная страница</a></li>
                     <li><a href="{{ url_for('stand') }}">Аппаратная часть стенда</a></li>
                     <li><a href="{{ url_for('experiments') }}">Эксперименты</a></li>
+                    <li><a href="{{ url_for('results') }}">Результаты</a><li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}

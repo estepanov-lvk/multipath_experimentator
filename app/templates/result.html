@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <h1>Experiment: {{ experiment.id }}</h1>
+    <hr>
+    <h4>
+    <p><b>Параметры эксперимента</b></p>
+    <table>
+    <tr> <td>Режим </td> <td>{{ experiment.mode }}</td> </tr>
+    <tr> <td>Маршрутизация </td> <td>{{ experiment.model }}</td> </tr>
+    <tr> <td>Максимальное количество подпотоков </td> <td>{{ experiment.subflow }}</td> </tr>
+    <tr> <td>Топология </td> <td>{{ experiment.topo }}</td> </tr>
+    <tr> <td>Количество полюсов (%)</td> <td>{{ experiment.poles }}</td> </tr>
+    <tr> <td>Количество потоков </td> <td>{{ experiment.flows }}</td> </tr>
+    <tr> <td>Инициализатор генератора полюсов </td> <td>{{ experiment.poles_seed }}</td> </tr>
+    <tr> <td>Инициализатор генератора маршрутов </td> <td>{{ experiment.routes_seed }}</td> </tr>
+    <tr> <td>Алгоритм управления перегрузкой </td> <td>{{ experiment.cc }}</td> </tr>
+    <tr> <td>Распределение времени старта потоков </td> <td>{{ experiment.distribution }}</td> </tr>
+    <tr> <td>Время проведения эксперимента </td> <td>{{ experiment.time }}</td> </tr>
+    <tr> <td>Протокол </td> <td>{{ experiment.protocol }}</td> </tr>
+    <tr> <td>Номер запуска </td> <td>{{ experiment.probe }}</td> </tr>
+    </table>
+
+    <table style="border-collapse: separate; border-spacing: 10px;">
+    {% for flow in  flows %}
+        <tr><td>{{ flow.client_ip }} </td> <td>{{flow.client_port}} </td> <td>{{flow.server_ip}} </td> <td>{{flow.server_port}} </td>
+        <td> Min {{flow.min_rate}} </td>
+        <td> Mean {{flow.mean_rate}} </td>
+        <td> Max {{flow.max_rate}} </td>
+        <td>
+            {% for rate in flow.rates %}
+                {{rate}}  
+            {% endfor %}
+        </td>
+        
+        </tr>
+    {% endfor %}
+    </table>
+{% endblock %}
