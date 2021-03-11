@@ -506,6 +506,20 @@ def collect_collectd_results(result_directory):
         raise
 
 
+def collect_controller_results(result_directory):
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    try:
+        head_c.get('runos/result.txt', '{}/runos_result.txt'.format(result_directory))
+        if head_c.run('rm -f runos/result.txt').failed:
+            raise RuntimeError('Failed to remove runos result file!')
+    except SystemExit as e:
+        print("Failed to collect results from runos controller")
+        print(e)
+        raise
+
+
+
+
 def collect_iperf3_results(result_directory, loader_pairs):
     def collect_remote_iperf3_results(result_directory, vmname):
         from pathlib import Path
@@ -1002,6 +1016,7 @@ class Runner:
                 loader_pairs = unite_loaders(self.loader_pairs)
                 kill_controller(exp)
                 collect_collectd_results(results_directory)
+                collect_controller_results(results_directory)
                 collect_iperf3_results(results_directory, loader_pairs)
         except BaseException as e:
             print("Failed to collect results!")

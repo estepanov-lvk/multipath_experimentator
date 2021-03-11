@@ -106,7 +106,7 @@ def parse_iperf(foldername):
     # drop intervals with inconsistent snapshots
     known_items = set().union(*(x.keys() for x in time_series.values()))
     time_series = {k: v for k, v in time_series.items() if v.keys() >= known_items}
-    print(time_series)
+    #print(time_series)
     if not time_series:
         print("DBG: ERROR! raising RuntimeError, empty series")
         raise RuntimeError('Collected empty series!')
@@ -145,6 +145,92 @@ def apply_per_entry(func, entries):
     # there is at least one entry in the list
     return next(iter(entries))._make(map(func, zip(*entries)))
 
+class Flow:
+    def __init__(self, src_ip, src_port, dst_ip, dst_port, start_time = '', route_number = 0, bw = 0):
+        self.src_ip = src_ip
+        self.src_port = src_port
+        self.dst_ip = dst_ip
+        self.dst_port = dst_port
+        self.subflows = []
+        self.start_time = start_time
+        self.route_number = route_number
+        self.bw = bw
+
+    def equal(self, src_ip, src_port, dst_ip, dst_port):
+        if self.src_ip == src_ip and\
+            self.src_port == src_port and\
+            self.dst_ip == dst_ip and\
+            self.dst_port == dst_port or\
+            self.src_ip == dst_ip and\
+            self.src_port == dst_port and\
+            self.dst_ip == src_ip and\
+            self.dst_port == dst_port:
+            return True
+        else:
+            return False
+
+    def add_subflow(self, src_ip, src_port, dst_ip, dst_port, start_time = '', route_number = 0, bw = 0):
+        sub = None
+        for subflow in self.subflows:
+            if subflow.equal(src_ip, src_port, dst_ip, dst_port):
+                sub = subflow
+                break
+        if sub:
+            return
+        sub = Flow(src_ip, src_port, dst_ip, dst_port, start_time, route_number, bw)
+        self.subflows.append(sub)
+
+    def print(self):
+        if self.subflows:
+            print("Parent {} {} {} {}".format(self.src_ip, self.src_port, self.dst_ip, self.dst_port))
+            for sub in self.subflows:
+                sub.print()
+        else:
+            print("Subflow {} {} {} {}".format(self.src_ip, self.src_port, self.dst_ip, self.dst_port))
+            print("    Time {} Route {} Bw {}".format(self.start_time, self.route_number, self.bw))
+        print("")
+
+
+def runos_results(test_folder):
+    flows = []
+    runos_file = open(test_folder/'runos_result.txt', 'rt')
+    lines = runos_file.readlines()
+    i = 0
+    while i < len(lines):
+        if lines[i] == '\n':
+            i += 1
+            continue
+
+        flow = None
+        cols = lines[i].split()
+        #Parent flow src_ip dst_ip src_port dst_port
+        for f in flows:
+            if f.equal(cols[2], cols[4], cols[3], cols[5]):
+                flow = f
+                break
+        if not flow:
+            flow = Flow(cols[2], cols[4], cols[3], cols[5])
+            flows.append(flow)
+
+        i += 1
+        #RouteBandwidth <int> FlowRemainingBandwidth <int>
+        cols = lines[i].split()
+        bw = int(cols[-1]) #TODO right bw
+        
+        i += 1
+        #RouteNumber <int> Timestamp <WeekDay> <Month> <Day> <Time> <Year>
+        cols = lines[i].split()
+        time = cols[-2]
+        route_number = int(cols[1])
+
+        i += 1
+        #Subflow src_ip dst_ip src_port dst_port
+        cols = lines[i].split()
+        flow.add_subflow(cols[1], cols[3], cols[2], cols[4], time, route_number, bw)
+
+        i += 1
+
+    return flows
 
 def collect_statistics(test_folder):
     stats = dict()
@@ -153,13 +239,14 @@ def collect_statistics(test_folder):
         series = parse_iperf(test_folder/'iperf')
     except Exception as e:
         print("DBG: GOT EXCEPTION {}".format(e) )
-    print("DBG: parsed iperf in {}".format(test_folder))
+    runos_flows = runos_results(test_folder)
+    #print("DBG: parsed iperf in {}".format(test_folder))
     stats['exp_length'] = len(series)
-    print("DBG: stage 1")
+    #print("DBG: stage 1")
     total_loads = apply_series_per_interval(sum, series)
     stats['total_load_mean'] = numpy.mean(list(8 * x.bytes for x in total_loads.values()))
     stats['total_load_percentiles'] = numpy.percentile(list(8 * x.bytes for x in total_loads.values()), range(10, 101, 10)).tolist()
-    print("DBG: stage 2")
+    #print("DBG: stage 2")
     flows = []
     flow_means = apply_series_per_item(numpy.mean, series)
     flow_min = apply_series_per_item(numpy.min, series)
@@ -171,19 +258,23 @@ def collect_statistics(test_folder):
         new_flow['client_port'] = flow.local_port
         new_flow['server_ip'] = flow.remote_host
         new_flow['server_port'] = flow.remote_port
-        print(flow)
+        #print(flow)
         new_flow['mean_rate'] = flow_means[flow].bytes
         new_flow['min_rate'] = flow_min[flow].bytes
         new_flow['max_rate'] = flow_max[flow].bytes
         new_flow['rates'] = []
-        print(flow_means[flow])
-        print(flow_min[flow])
-        print(flow_max[flow])
+        #print(flow_means[flow])
+        #print(flow_min[flow])
+        #print(flow_max[flow])
         for time in sorted(list(series.keys())):
             #print(time - time_min, series[time][flow])
             new_flow['rates'].append(series[time][flow].bytes)
+
+        for f in runos_flows:
+            if f.equal(flow.local_host, str(flow.local_port), flow.remote_host, str(flow.remote_port)):
+                new_flow['subflows'] = f.subflows
         flows.append(new_flow)
-        print(new_flow)
+        #print(new_flow)
     stats['flow_percentiles'] = numpy.percentile(list(8 * x.bytes for x in flow_means.values()), range(10, 101, 10)).tolist()
     # flow_deviations = apply_series_per_item(numpy.std, series)
     # stats['average_deviation'] = numpy.mean(list(v.bytes/flow_means[k].bytes for k, v in flow_deviations.items()))
@@ -198,7 +289,7 @@ def collect_statistics(test_folder):
     stats['link_util_mean'] = numpy.mean(list(x.octets_rx / (10 ** 9) for x in link_utilization.values()))
     stats['overloaded_links'] = sum(x.octets_tx > 900 * (10**6) for x in link_utilization.values())
     stats['overloaded_links'] /= len(link_utilization)
-    print("DBG: trying to open/create test_stat.json in {}".format(test_folder))
+    #print("DBG: trying to open/create test_stat.json in {}".format(test_folder))
     with open(str(test_folder/'test_stat.json'), 'wt') as fd:
         json.dump(stats, fd)
     return flows

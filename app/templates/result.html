@@ -21,19 +21,30 @@
     <tr> <td>Номер запуска </td> <td>{{ experiment.probe }}</td> </tr>
     </table>
 
-    <table style="border-collapse: separate; border-spacing: 10px;">
-    {% for flow in  flows %}
-        <tr><td>{{ flow.client_ip }} </td> <td>{{flow.client_port}} </td> <td>{{flow.server_ip}} </td> <td>{{flow.server_port}} </td>
-        <td> Min {{flow.min_rate}} </td>
-        <td> Mean {{flow.mean_rate}} </td>
-        <td> Max {{flow.max_rate}} </td>
-        <td>
-            {% for rate in flow.rates %}
-                {{rate}}  
+    <div style="overflow-x: auto;">
+            <table class="no-wrap" style="border-collapse: separate; border-spacing: 10px;">
+            {% for flow in  flows %}
+                <tr><td>{{ flow.client_ip }} </td> <td>{{flow.client_port}} </td> <td>{{flow.server_ip}} </td> <td>{{flow.server_port}} </td>
+                <td> Min {{flow.min_rate}} </td>
+                <td> Mean {{flow.mean_rate}} </td>
+                <td> Max {{flow.max_rate}} </td>
+                <td>
+                    <table> <tr>
+                    {% for rate in flow.rates %}
+                        <td style="padding:0 10px">{{rate}}</td>  
+                    {% endfor %}
+                    </tr>
+                    </table>
+                </td>
+                </tr>
+                {% for sub in flow.subflows %}
+                    <tr>
+                    <td></td><td></td>
+                    <td>{{sub.route_number}}</td>
+                    <td>{{sub.start_time}}</td>
+                    </tr>
+                {% endfor %}
             {% endfor %}
-        </td>
-        
-        </tr>
-    {% endfor %}
-    </table>
+            </table>
+    </div>
 {% endblock %}
