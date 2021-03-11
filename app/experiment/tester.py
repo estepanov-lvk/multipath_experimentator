@@ -157,6 +157,20 @@ class VMConfig(object):
 
 vm_config = VMConfig()
 
+def get_qos_classes():
+    #TODO not to rely on the vm_config (we should use database)
+    classes = []
+    for cl in sorted(vm_config.vm_qos_classes.keys()):
+        vm_name = vm_config.vm_qos_classes[cl][0]
+        new_class = {}
+        new_class['name'] = cl
+        new_class['vm'] = vm_name
+        new_class['bitrate'] = vm_config.vm_bitrate[vm_name]
+        new_class['volume'] = [key for key in vm_config.vm_transfer_size if vm_name in vm_config.vm_transfer_size[key]][0] 
+        new_class['share'] = vm_config.vm_flow_share[vm_name]
+        classes.append(new_class)
+    return classes
+
 def genNormal(duration, subflows, seed):
     numpy.random.seed(seed)
     mu, sigma = duration/2, 10

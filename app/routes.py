@@ -14,7 +14,7 @@ from app.telebot.mastermind import bot
 from . import socketio
 from flask_socketio import emit
 from app.experiment.grabber import get_topo
-from app.experiment.tester import vm_config
+from app.experiment.tester import get_qos_classes
 
 @app.route('/')
 @app.route('/index')
@@ -126,7 +126,8 @@ def exp_result(experimentid):
     from app.experiment.grabber import analyze_results
     exp = Experiment.query.filter_by(id=experimentid).first_or_404()
     flows = analyze_results(exp.sha_hash())
-    return render_template('result.html', experiment=exp, flows = flows)
+    classes = get_qos_classes()
+    return render_template('result.html', experiment=exp, flows = flows, classes=classes)
 
 @app.route('/result/<experimentid>/topo')
 @login_required
@@ -136,17 +137,7 @@ def exp_topo(experimentid):
     nodes = topo.nodes()
     edges = topo.edges()
 
-    #TODO not to rely on the vm_config (we should use database)
-    classes = []
-    for cl in sorted(vm_config.vm_qos_classes.keys()):
-        vm_name = vm_config.vm_qos_classes[cl][0]
-        new_class = {}
-        new_class['name'] = cl
-        new_class['vm'] = vm_name
-        new_class['bitrate'] = vm_config.vm_bitrate[vm_name]
-        new_class['volume'] = [key for key in vm_config.vm_transfer_size if vm_name in vm_config.vm_transfer_size[key]][0] 
-        new_class['share'] = vm_config.vm_flow_share[vm_name]
-        classes.append(new_class)
+    classes = get_qos_classes()
     return render_template('result_topo.html', experiment=exp, nodes=nodes, edges=edges,
                             classes=classes)
 

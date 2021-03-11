@@ -28,9 +28,9 @@
     <tr> <td>Режим </td> <td>{{ experiment.mode }}</td> </tr>
     <tr> <td>Маршрутизация </td> <td>{{ experiment.model }}</td> </tr>
     <tr> <td>Максимальное количество подпотоков </td> <td>{{ experiment.subflow }}</td> </tr>
-    <tr> <td>Топология </td> <td>{{ experiment.topo }}</td> </tr>
+    <tr> <td>Топология </td> <td><a href="{{ url_for('exp_topo',experimentid=experiment.id)}}">{{ experiment.topo }}</a></td> </tr>
     <tr> <td>Количество полюсов (%)</td> <td>{{ experiment.poles }}</td> </tr>
-    <tr> <td>Количество потоков </td> <td>{{ experiment.flows }}</td> </tr>
+    <tr> <td>Количество потоков </td> <td><a href="{{ url_for('exp_result',experimentid=experiment.id)}}">{{ experiment.flows }}</a></td> </tr>
     <tr> <td>Инициализатор генератора полюсов </td> <td>{{ experiment.poles_seed }}</td> </tr>
     <tr> <td>Инициализатор генератора маршрутов </td> <td>{{ experiment.routes_seed }}</td> </tr>
     <tr> <td>Алгоритм управления перегрузкой </td> <td>{{ experiment.cc }}</td> </tr>
