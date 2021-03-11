@@ -7,6 +7,8 @@ import numpy
 import pathlib
 import re
 import tarfile
+import networkx as nx
+import pickle
 
 
 def parse_collectd(filename):
@@ -300,6 +302,13 @@ def analyze_results(result_directory):
     flows = collect_statistics(result_folder)
     print("Analyzed " + result_directory)
     return flows
+
+def get_topo(topo_name):
+    with open("app/experiment/topo/" + topo_name, 'rb') as fp:
+        graph = pickle.load(fp)
+        graph = nx.Graph(graph)
+        return graph
+    return None
 
 if __name__ == '__main__':
 

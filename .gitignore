@@ -7,3 +7,5 @@ configs
 app/stand/ssh_config
 route_config.json
 results/
+package-lock.json
+node_modules/

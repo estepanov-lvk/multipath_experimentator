@@ -1090,6 +1090,8 @@ class Tester:
         import multiprocessing
         print("Async run of run")
         while self.queue:
+                # for DEBUG
+                break
                 self.current_experiment = self.queue.pop(0)
                 self.current_stage = STAGES[0]
                 exp_thread = threading.Thread(target = self.runner.run, args = (self.current_experiment, ))

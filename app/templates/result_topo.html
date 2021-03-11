@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block head %}
+ {{ super() }}
+ <script type="text/javascript" src="https://unpkg.com/vis-network/dist/vis-network.min.js"></script>
+ <link rel="stylesheet" type="text/css" href="https://unpkg.com/vis-network/dist/vis-network.min.css" />
+ <style type="text/css">
+    #topo {
+        width: 1300px;
+        height: 1000px;
+        border: 1px solid lightgray;
+    }
+ </style>
+ <style type="text/css">
+ td
+ {
+     padding:0 15px;
+     }
+ </style>
+{% endblock %}
+
+{% block app_content %}
+    <h1>Experiment: {{ experiment.id }}</h1>
+    <hr>
+    <h4>
+    <p><b>Параметры эксперимента</b></p>
+    <table>
+    <tr> <td>Режим </td> <td>{{ experiment.mode }}</td> </tr>
+    <tr> <td>Маршрутизация </td> <td>{{ experiment.model }}</td> </tr>
+    <tr> <td>Максимальное количество подпотоков </td> <td>{{ experiment.subflow }}</td> </tr>
+    <tr> <td>Топология </td> <td>{{ experiment.topo }}</td> </tr>
+    <tr> <td>Количество полюсов (%)</td> <td>{{ experiment.poles }}</td> </tr>
+    <tr> <td>Количество потоков </td> <td>{{ experiment.flows }}</td> </tr>
+    <tr> <td>Инициализатор генератора полюсов </td> <td>{{ experiment.poles_seed }}</td> </tr>
+    <tr> <td>Инициализатор генератора маршрутов </td> <td>{{ experiment.routes_seed }}</td> </tr>
+    <tr> <td>Алгоритм управления перегрузкой </td> <td>{{ experiment.cc }}</td> </tr>
+    <tr> <td>Распределение времени старта потоков </td> <td>{{ experiment.distribution }}</td> </tr>
+    <tr> <td>Время проведения эксперимента </td> <td>{{ experiment.time }}</td> </tr>
+    <tr> <td>Протокол </td> <td>{{ experiment.protocol }}</td> </tr>
+    <tr> <td>Номер запуска </td> <td>{{ experiment.probe }}</td> </tr>
+    </table>
+
+    <br>
+    <p><b>Параметры топологии (в настоящий момент статические)</b></p>
+    <table>
+    <tr> <td>Пропускная способность канала </td> <td> 1000 Mbps </td> </tr>
+    <tr> <td>Задержка на канале </td> <td> 1 ms </td> </tr>
+    <tr> <td>Джиттер </td> <td> 0 </td> </tr>
+    <tr> <td>Процент потерь </td> <td> 0.1% </td></tr>
+    <tr> <td>Максимальная задержка в очереди </td> <td> 16 ms </td> </tr>
+    </table>
+
+    <br>
+    <p><b>Классы трафика</b></p>
+    <table>
+    <tr> <td>Имя класса</td>
+         <td>Скорость генерации данных</td>
+         <td>Объем данных</td>
+         <td>Виртуальная машина</td>
+         <td>Доля потоков (?)</td>
+    </tr>
+
+    {% for cl in classes %}
+    <tr> <td>{{cl.name}}</td>
+         <td>{{cl.bitrate}} bps</td>
+         <td>{{cl.volume}} bytes</td>
+         <td>{{cl.vm}}</td>
+         <td>{{cl.share}}</td>
+    </tr>
+    {% endfor %}
+    </table>
+
+    <br>
+    <div id="topo"></div>
+    <script type="text/javascript">
+        var nodes = new vis.DataSet([]);
+        {% for n in nodes %}
+            nodes.add({ id: {{n}}, label: "{{n}}"});
+        {% endfor %}
+
+        var edges = new vis.DataSet([]);
+        {% for e in edges %}
+            edges.add({ from: {{e[0]}}, to: {{e[1]}} });
+        {% endfor %}
+
+        var container = document.getElementById("topo");
+        var data = {
+            nodes: nodes,
+            edges: edges,
+        };
+        var options = {};
+        var network = new vis.Network(container, data, options);
+    </script>
+{% endblock %}
