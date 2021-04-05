@@ -442,6 +442,18 @@ def kill_controller(exp):
     if head_c.run('bash -c "pkill runos"').failed:
         raise RuntimeError('Failed to kill controller process!')
 
+def start_watch(exp):
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    #TODO check that script is on the head (beforehand)
+
+    if head_c.run('bash -c "/home/arccn/watch_script.sh"').failed:
+        raise RuntimeError('Failed on watch start')
+
+def kill_watch(exp):
+    SWITCH = 1234 #TODO add switch from experiment parameters
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    if head_c.run(str('''bash -c "pkill -f 'watch -n 1 sudo ovs-ofctl dump-flows -O openflow13 {} >> {}_result.txt'"'''.format(SWITCH, SWITCH))).failed:
+        raise RuntimeError('Failed to kill watch process')
 
 def setup_loader(exp, vm):
     def setup_interface(vm_c, iface, ip, subnum):
@@ -531,6 +543,17 @@ def collect_controller_results(result_directory):
         print(e)
         raise
 
+def collect_watch_results(result_directory):
+    SWITCH = 1234 #TODO make from experiment config
+    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    try:
+        head_c.get('{}_result.txt'.format(SWITCH), '{}/{}_result.txt'.format(result_directory, SWITCH))
+        if head_c.run('rm -f {}_result.txt'.format(SWITCH)).failed:
+            raise RuntimeError('Faile to remove watch result file!')
+    except SystemExit as e:
+        print('Failed to collect results from watch process')
+        print(e)
+        raise
 
 
 
@@ -927,6 +950,7 @@ class Runner:
             self.loader_pairs = self.generate_loader_pairs(exp.flows)
             setup_multiloader(self.loader_pairs, exp)
             start_controller(exp)
+            start_watch(exp)
         except BaseException as e:
             print("Failed to deploy testbed!")
             print(e)
@@ -1029,8 +1053,10 @@ class Runner:
                 Path(results_directory).mkdir(parents=True, exist_ok=True)
                 loader_pairs = unite_loaders(self.loader_pairs)
                 kill_controller(exp)
+                kill_watch(exp)
                 collect_collectd_results(results_directory)
                 collect_controller_results(results_directory)
+                collect_watch_results(results_directory)
                 collect_iperf3_results(results_directory, loader_pairs)
         except BaseException as e:
             print("Failed to collect results!")
@@ -1105,7 +1131,7 @@ class Tester:
         print("Async run of run")
         while self.queue:
                 # for DEBUG
-                break
+                #break
                 self.current_experiment = self.queue.pop(0)
                 self.current_stage = STAGES[0]
                 exp_thread = threading.Thread(target = self.runner.run, args = (self.current_experiment, ))

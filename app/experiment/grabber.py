@@ -107,6 +107,11 @@ def parse_iperf(foldername):
 
     # drop intervals with inconsistent snapshots
     known_items = set().union(*(x.keys() for x in time_series.values()))
+    for time in sorted(list(time_series.keys())):
+        for flow in known_items:
+            if not flow in time_series[time]:
+                time_series[time][flow] = metrics(bytes=0, snd_cwnd=0, rtt=0, retransmits=0)
+                print("No information about flow")
     time_series = {k: v for k, v in time_series.items() if v.keys() >= known_items}
     #print(time_series)
     if not time_series:
@@ -270,6 +275,8 @@ def collect_statistics(test_folder):
         #print(flow_max[flow])
         for time in sorted(list(series.keys())):
             #print(time - time_min, series[time][flow])
+            if not flow in series[time].keys():
+                print("No time")
             new_flow['rates'].append(series[time][flow].bytes)
 
         for f in runos_flows:
