@@ -714,7 +714,7 @@ def start_iperf3_clients(params, exp):
                 -n {transfer_str}
                 --parallel {{3}}
                 -b {bitrate}
-                -l 10000
+                -l 1000
                 --json
                 -E /home/fdmp/distrFile{{4}}.txt
                 
@@ -1131,7 +1131,7 @@ class Tester:
         print("Async run of run")
         while self.queue:
                 # for DEBUG
-                #break
+                break
                 self.current_experiment = self.queue.pop(0)
                 self.current_stage = STAGES[0]
                 exp_thread = threading.Thread(target = self.runner.run, args = (self.current_experiment, ))

@@ -51,6 +51,12 @@
     {% endfor %}
     </table>
 
+    <br>
+    <p><b>Аналитика</b></p>
+    <table>
+    <tr> <td>Количество удовлетворенных потоков(95%)</td><td>100</td></tr>
+    </table>
+
 
     <br>
     <div style="overflow-x: auto;">
@@ -60,20 +66,19 @@
                 <td> Min {{flow.min_rate}} </td>
                 <td> Mean {{flow.mean_rate}} </td>
                 <td> Max {{flow.max_rate}} </td>
-                <td>
-                    <table> <tr>
                     {% for rate in flow.rates %}
-                        <td style="padding:0 10px">{{rate}}</td>  
+                        <td style="padding:0 10px">{{rate}} Bps</td>  
                     {% endfor %}
-                    </tr>
-                    </table>
-                </td>
                 </tr>
                 {% for sub in flow.subflows %}
                     <tr>
                     <td></td><td></td>
                     <td>{{sub.route_number}}</td>
                     <td>{{sub.start_time}}</td>
+                    <td></td><td></td><td></td>
+                    {% for rate in sub.rates %}
+                        <td style="padding:0 10px">{{rate}}</td>
+                    {% endfor %}
                     </tr>
                 {% endfor %}
             {% endfor %}

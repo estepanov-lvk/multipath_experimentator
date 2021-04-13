@@ -111,7 +111,7 @@ def parse_iperf(foldername):
         for flow in known_items:
             if not flow in time_series[time]:
                 time_series[time][flow] = metrics(bytes=0, snd_cwnd=0, rtt=0, retransmits=0)
-                print("No information about flow")
+                #print("No information about flow")
     time_series = {k: v for k, v in time_series.items() if v.keys() >= known_items}
     #print(time_series)
     if not time_series:
@@ -197,6 +197,30 @@ class Flow:
             print("    Time {} Route {} Bw {}".format(self.start_time, self.route_number, self.bw))
         print("")
 
+def watch_results(test_folder, flows):
+    import re
+    watch_file = open(test_folder/'1234_result.txt', 'rt')
+    lines = watch_file.readlines()
+
+    for flow in flows:
+        for subflow in flow.subflows:
+            src_ip = 'nw_src={}'.format(subflow.src_ip)
+            dst_ip = 'nw_dst={}'.format(subflow.dst_ip)
+            src_port = 'tp_src={}'.format(subflow.src_port)
+            dst_port = 'tp_dst={}'.format(subflow.dst_port)
+            last_bytes = 0
+            rates = []
+            for line in lines:
+                if src_ip in line and\
+                   dst_ip in line and\
+                   src_port in line and\
+                   dst_port in line:
+                    m = re.search('bytes=([0-9]*)', line)
+                    if m:
+                        rates.append(int(m.group(1)) - last_bytes)
+                        last_bytes = int(m.group(1))
+            subflow.rates = rates
+
 
 def runos_results(test_folder):
     flows = []
@@ -247,6 +271,7 @@ def collect_statistics(test_folder):
     except Exception as e:
         print("DBG: GOT EXCEPTION {}".format(e) )
     runos_flows = runos_results(test_folder)
+    watch_results(test_folder, runos_flows)
     #print("DBG: parsed iperf in {}".format(test_folder))
     stats['exp_length'] = len(series)
     #print("DBG: stage 1")
@@ -279,11 +304,25 @@ def collect_statistics(test_folder):
                 print("No time")
             new_flow['rates'].append(series[time][flow].bytes)
 
+        start = 0
+        finish = -1
+        while new_flow['rates'][start] == 0:
+            start += 1
+        while new_flow['rates'][finish] == 0:
+            finish -= 1
+        #true_rates = new_flow['rates'][start:min(finish+1, -1)] 
+        true_rates = new_flow['rates'][start:min(finish, -2)] 
+        if len(true_rates):
+            new_flow['mean_rate'] = sum(true_rates) / len(true_rates)
+            new_flow['min_rate'] = min(true_rates)
+            new_flow['max_rate'] = max(true_rates)
+
         for f in runos_flows:
             if f.equal(flow.local_host, str(flow.local_port), flow.remote_host, str(flow.remote_port)):
                 new_flow['subflows'] = f.subflows
         flows.append(new_flow)
         #print(new_flow)
+
     stats['flow_percentiles'] = numpy.percentile(list(8 * x.bytes for x in flow_means.values()), range(10, 101, 10)).tolist()
     # flow_deviations = apply_series_per_item(numpy.std, series)
     # stats['average_deviation'] = numpy.mean(list(v.bytes/flow_means[k].bytes for k, v in flow_deviations.items()))
