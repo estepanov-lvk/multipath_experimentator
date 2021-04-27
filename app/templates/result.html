@@ -6,7 +6,7 @@
  td
  {
      padding:0 15px;
-     }
+ }
  </style>
 {% endblock %}
 
@@ -62,7 +62,7 @@
     <div style="overflow-x: auto;">
             <table class="no-wrap" style="border-collapse: separate; border-spacing: 10px;">
             {% for flow in  flows %}
-                <tr><td>{{ flow.client_ip }} </td> <td>{{flow.client_port}} </td> <td>{{flow.server_ip}} </td> <td>{{flow.server_port}} </td>
+                <tr style="background:#b8d1f3"><td>{{ flow.client_ip }} </td> <td>{{flow.client_port}} </td> <td>{{flow.server_ip}} </td> <td>{{flow.server_port}} </td>
                 <td> Min {{flow.min_rate}} </td>
                 <td> Mean {{flow.mean_rate}} </td>
                 <td> Max {{flow.max_rate}} </td>

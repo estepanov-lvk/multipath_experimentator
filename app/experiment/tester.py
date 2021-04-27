@@ -369,7 +369,8 @@ def set_bitrate_in_json():
 
 
 
-def create_controller_config(topo, subflow, poles):
+def create_controller_config(topo, subflow, poles, proto):
+    BANDWIDTH = 1000000 #Kbit/s  current value is 1 Gbit/s
     print(topo, subflow, poles)
     dict1 = {}
     dict1["name"] = "stand-data"
@@ -378,6 +379,7 @@ def create_controller_config(topo, subflow, poles):
     dict1["sub_num"] = subflow
     dict1["seed"] = 1
     dict1["pole_ratio"] = poles
+    dict1["protocol"] = proto
     dict_topo = {}
     dict_topo["name"] = topo
     dict_edges = {}
@@ -394,12 +396,12 @@ def create_controller_config(topo, subflow, poles):
         dict_edge = {}
         dict_edge["s_node"] = t[0]
         dict_edge["d_node"] = t[1]
-        dict_edge["bw"] = 10
+        dict_edge["bw"] = BANDWIDTH
         list_edges.append(dict_edge)
         dict_edge = {}
         dict_edge["s_node"] = t[1]
         dict_edge["d_node"] = t[0]
-        dict_edge["bw"] = 10
+        dict_edge["bw"] = BANDWIDTH
         list_edges.append(dict_edge)
     dict_topo["nodes"] = graph.nodes()
     dict_topo["edges"] = list_edges
@@ -427,7 +429,7 @@ def create_controller_config(topo, subflow, poles):
 
 
 def start_controller(exp):
-    create_controller_config(exp.topo, exp.subflow, exp.poles)
+    create_controller_config(exp.topo, exp.subflow, exp.poles, exp.protocol)
     set_bitrate_in_json()
     head_c = fabric.connection.Connection(host = 'head', config = conn_config)
 
@@ -613,7 +615,7 @@ def setLoaderQos(subflows, protocol):
             try:
                 if protocol == 'fdmp':
                     print("PROTOCOL = FDMP")
-                    modifyQos(vm_c, key)
+                    modifyQos(vm_c, (int)(key * 0.9)) #90% from application rate
                     modifyPathManager(vm_c)
                     setSubflows(vm_c, subflows)
                     enableFdmp(vm_c)
@@ -1131,7 +1133,7 @@ class Tester:
         print("Async run of run")
         while self.queue:
                 # for DEBUG
-                break
+                #break
                 self.current_experiment = self.queue.pop(0)
                 self.current_stage = STAGES[0]
                 exp_thread = threading.Thread(target = self.runner.run, args = (self.current_experiment, ))
@@ -1150,7 +1152,7 @@ class Tester:
                 db.session.add(local_object)
                 db.session.commit()
                 # for DEBUG
-                break
+                #break
 
     def start_in_thread(self, loop):
         asyncio.set_event_loop(loop)
