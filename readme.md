@@ -21,6 +21,8 @@ pip3 install networkx==1.11
 RUN:
 source venv/bin/activate
 export FLASK_APP=stand_control.py
+flask run --host=0.0.0.0 --no-reload
+
 
 
 
