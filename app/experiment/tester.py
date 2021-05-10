@@ -25,13 +25,13 @@ RESTART_VMS_TIMEOUT = 50
 
 #TODO move IFMAP to models
 IF_MAP = { #interfaces on head to loaders 
-    'fdmp_at_w1loader1-clone': 'enp13s0f0', 
+    'olya_at_w1loader1-clone': 'enp13s0f0', 
     'fdmp_at_w1loader2-clone': 'enp13s0f1',
-    'fdmp_at_w1loader3-clone': 'enp15s0f1',
+    #'fdmp_at_w1loader3-clone': 'enp15s0f1',
     #'fdmp_at_w1loader4': 'enp15s0f1',
-    'fdmp_at_w4loader1-clone': 'enp8s0f0',
-    'fdmp_at_w4loader2-clone': 'enp131s0f0',
-    'fdmp_at_w4loader3-clone': 'enp131s0f1',
+    #'fdmp_at_w4loader1-clone': 'enp8s0f0',
+    #'fdmp_at_w4loader2-clone': 'enp131s0f0',
+    #'fdmp_at_w4loader3-clone': 'enp131s0f1',
     #'fdmp_at_w4loader4': 'enp15s0f0',
 }
 BORDER_SWITCH = 1234
