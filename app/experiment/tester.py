@@ -279,6 +279,7 @@ def restart_domain(vm):
 
     #with fabric.api.hide('everything'):
     try:
+        print("lalalal", vm)
         host, domain = vm_config.vm_allocation[vm]
         print(vm_config.user_alias[host])
 	
