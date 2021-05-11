@@ -58,7 +58,7 @@ NAME_MAP = {
     'user' : 'olya',
 }
 
-VMs = ['head', 'vm_fdmp', 'vm_fdmp2']
+VMs = ['vm_fdmp', 'vm_fdmp2']
 
 
 # head - where topology is
