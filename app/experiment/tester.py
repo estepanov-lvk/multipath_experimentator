@@ -260,29 +260,31 @@ def restart_domain(vm):
 '''
 
 def restart_domain(vm):
-    @fabric.api.task
+    #@fabric.api.task
     def restart_remote_domain(domain):
         print("Running command pwd")
-        fabric.api.run('pwd')
+        fabric.connection.Connection('127.0.0.1').run('pwd')
         print("Trying to reset VM")
-        if fabric.api.run('virsh reset {}'.format(domain)).failed:
+        if fabric.connection.Connection('127.0.0.1').run('virsh reset {}'.format(domain)).failed:
             raise RuntimeError('Failed to reset VM!')
 
-    @fabric.api.task
+    #@fabric.api.task
     def wait_remote_vm():
         with fabric.api.settings(
             connection_attempts=10,
             timeout=3,
         ):
-            if fabric.api.run('uptime').failed:
+            if fabric.connection.Connection('127.0.0.1').run('uptime').failed:
                 raise RuntimeError('Failed to connect VM!')
 
     #with fabric.api.hide('everything'):
     try:
         host, domain = vm_config.vm_allocation[vm]
         print(vm_config.user_alias[host])
-        fabric.api.execute(restart_remote_domain, domain, hosts=vm_config.user_alias[host])
+	
+        #fabric.connection.Connection('127.0.0.1').execute(restart_remote_domain, domain, hosts=vm_config.user_alias[host])
         #fabric.api.execute(wait_remote_vm, hosts=vm_config.user_alias[vm])
+	restart_remote_domain(domain)
     except SystemExit as e:
         print('Failed to restart domain! Wait_remote_vm')
         print(e)
