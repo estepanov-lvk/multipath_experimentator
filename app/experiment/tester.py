@@ -293,7 +293,7 @@ def restart_domain(vm):
         raise
 
 def wait_domain(vm):
-    from app.models import Server
+    #from app.models import Server
 
     def wait_remote_vm(c):
         while True:
@@ -305,9 +305,9 @@ def wait_domain(vm):
                 #print(e)
 
     try:
-        servername = Server.query.filter_by(id = vm.server_id).all()[0].servername
-        c_server = fabric.connection.Connection(host = servername, config = conn_config)
-        c_client = fabric.connection.Connection(host = vm.vmname, config = conn_config, connect_timeout = 0)
+        #servername = Server.query.filter_by(id = vm.server_id).all()[0].servername
+        c_server = fabric.connection.Connection(host = 'w2', config = conn_config)
+        c_client = fabric.connection.Connection(host = vm, config = conn_config, connect_timeout = 0)
 
         wait_remote_vm(c_client)
     except SystemExit as e:
