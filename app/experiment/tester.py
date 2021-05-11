@@ -1042,7 +1042,7 @@ class Runner:
     def clean_iperf3_results(self, exp):
         #from app.models import VM
         #vms = VM.query.all()
-	vms = VMs
+        vms = VMs
         for vm in vms:
             vm_c = fabric.connection.Connection(host = vm, config = conn_config)
             vm_c.run('rm -rf iperf3 || true')
