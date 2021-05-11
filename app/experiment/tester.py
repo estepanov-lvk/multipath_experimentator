@@ -332,12 +332,12 @@ def start_topology(exp):
     else:
         model = '--ecmp {}'.format(exp.model)
 
-    from app.models import Server
+    #from app.models import Server
 
-    head = Server.query.filter_by(servername = 'head').all()[0]
-    head_user = head.username
+    #head = Server.query.filter_by(servername = 'head').all()[0]
+    #head_user = head.username
     #TODO: make topology on right user
-    head_user = 'fdmp'
+    head_user = 'olya'
     head_c = fabric.connection.Connection(host = 'head', config = conn_config)
     if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./run_1st.py -b {} {} {}"'.format(
                     head_user,
@@ -347,15 +347,15 @@ def start_topology(exp):
         raise RuntimeError('Failed on run 1st!')
 
 def set_qos(exp):
-    from app.models import Server
+    #from app.models import Server
     #TODO make it in config or parameters of experiment
     RATE = 1000 #Mbps
     RTT = 2 #ms
 
-    head = Server.query.filter_by(servername = 'head').all()[0]
-    head_user = head.username
+    #head = Server.query.filter_by(servername = 'head').all()[0]
+    #head_user = head.username
     #TODO: make topology on right user
-    head_user = 'fdmp'
+    head_user = 'olya'
     head_c = fabric.connection.Connection(host = 'head', config = conn_config)
     if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./set_qos.py --link_opts rate={},loss=10,rtt={},jitter=0"'.format(
                     head_user, RATE, RTT)).failed:
@@ -379,7 +379,7 @@ def setup_multiloader(loader_pairs, exp):
     result_config += '\n]\n}\n'
 
     active = '--active {} {}'.format(exp.poles, exp.poles_seed)
-    head_user = 'fdmp'
+    head_user = 'olya'
     head_c = fabric.connection.Connection(host = 'head', config = conn_config)
     head_c.put(io.StringIO(result_config), remote='/home/{}/netbuilder/testbed.json'.format(head_user))
         
@@ -431,8 +431,10 @@ def create_controller_config(topo, subflow, poles, proto):
     dict_topo["name"] = topo
     dict_edges = {}
     list_edges = []
+    print('what path where START')
     with open("/home/fdmp/netbuilder/topo/" + topo, 'rb') as fp:
         graph = pickle.load(fp)
+    print('END')
     
     edges = graph.edges()
     edges_filtered = []
@@ -480,9 +482,9 @@ def start_controller(exp):
     set_bitrate_in_json()
     head_c = fabric.connection.Connection(host = 'head', config = conn_config)
 
-    head_c.put('route_config.json', '/home/arccn/runos/runos-settings.json')
+    head_c.put('route_config.json', '/home/olya/runos/runos-settings.json')
 
-    controller_command = 'cd /home/arccn/runos; tmux new -d \\"source ~/.nix-profile/etc/profile.d/nix.sh; nix-shell --command build/runos\\"'
+    controller_command = 'cd /home/olya/runos; tmux new -d \\"source ~/.nix-profile/etc/profile.d/nix.sh; nix-shell --command build/runos\\"'
     if head_c.run('bash -c "{}"'.format(controller_command)).failed:
         raise RuntimeError('Failed on runos start')
 
@@ -495,7 +497,7 @@ def start_watch(exp):
     head_c = fabric.connection.Connection(host = 'head', config = conn_config)
     #TODO check that script is on the head (beforehand)
 
-    if head_c.run('bash -c "/home/arccn/watch_script.sh"').failed:
+    if head_c.run('bash -c "/home/olya/watch_script.sh"').failed:
         raise RuntimeError('Failed on watch start')
 
 def kill_watch(exp):
@@ -548,10 +550,10 @@ def setup_loader(exp, vm):
             raise RuntimeError('Failed to configure congestion control!')
 
     #TODO interfaces
-    iface, ip = vm_config.vm_data_if[vm.vmname]
+    iface, ip = vm_config.vm_data_if[vm]
     subnum = exp.subflow
     #TODO root? 
-    vm_c = fabric.connection.Connection(host = vm.vmname, config = conn_config)
+    vm_c = fabric.connection.Connection(host = vm, config = conn_config)
 
     try: 
         # with head_c.hide('everything'):
@@ -631,7 +633,7 @@ def collect_iperf3_results(result_directory, loader_pairs):
 
 
 def setLoaderQos(subflows, protocol):
-    from app.models import VM
+    #from app.models import VM
 
     def modifyQos(vm_c, qos):
         if vm_c.run('sudo -H bash -c "echo {} > /proc/sys/net/fdmp/qos_req_default"'.format(qos)).failed:
@@ -812,14 +814,15 @@ def print_loader_pairs(loader_pairs):
 
 #TODO make using VM database
 def get_remote_server_name(pair_number):
-    base_str = 'fdmp_at_w4loader{}-clone'
-    return base_str.format((pair_number // 2) % MAX_PAIRS + 1)
+    print('server name')
+    base_str = 'vm_fdmp'
+    return base_str
     
 
 def get_remote_client_name(pair_number):
-    base_str = 'fdmp_at_w1loader{}-clone'
-    return base_str.format((pair_number // 2) % MAX_PAIRS + 1)
-
+    #base_str = 'fdmp_at_w1loader{}-clone'
+    #return base_str.format((pair_number // 2) % MAX_PAIRS + 1)
+    return 'vm_fdmp2'
 
 def unite_loaders(loader_pairs):
     unique_pairs = {}
@@ -952,7 +955,7 @@ class Runner:
 
 
     def restart_vms(self, exp):
-        from app.models import VM
+        #from app.models import VM
 
         try:
             #vms = VM.query.all()
@@ -978,15 +981,15 @@ class Runner:
             raise
 
     def cleanup_testbed(self, exp):
-        from app.models import Server
+        #from app.models import Server
 
-        head = Server.query.filter_by(servername = 'head').all()[0]
-        user_head = head.username
+        #head = Server.query.filter_by(servername = 'head').all()[0]
+        #user_head = head.username
         #TODO: we don't need in cleanup, if the topology is same
         try:
             c_server = fabric.connection.Connection(host = 'head', config = conn_config)
             #TODO setup sudo password?
-            c_server.run('sudo bash -c "cd /home/{}/netbuilder; ./delete.sh"'.format(user_head))
+            c_server.run('sudo bash -c "cd /home/olya/netbuilder; ./delete.sh"')
         except BaseException as e:
             print("Failed to clean up testbed!")
             print(e)
@@ -1011,9 +1014,9 @@ class Runner:
         pass
 
     def setup_vms(self, exp):
-        from app.models import VM
+        #from app.models import VM
         try:
-            vms = VM.query.all()
+            vms = VMs
             n_processes = len(vms)
             param_list = []
             if exp.mode == 'mixed':
@@ -1037,10 +1040,11 @@ class Runner:
             print(e)
 
     def clean_iperf3_results(self, exp):
-        from app.models import VM
-        vms = VM.query.all()
+        #from app.models import VM
+        #vms = VM.query.all()
+	vms = VMs
         for vm in vms:
-            vm_c = fabric.connection.Connection(host = vm.vmname, config = conn_config)
+            vm_c = fabric.connection.Connection(host = vm, config = conn_config)
             vm_c.run('rm -rf iperf3 || true')
             vm_c.run('pkill -HUP parallel || true')
         
