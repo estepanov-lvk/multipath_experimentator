@@ -311,9 +311,9 @@ def wait_domain(vm):
         c_client = fabric.connection.Connection(host = vm, config = conn_config, connect_timeout = 0)
 
         #wait_remote_vm(c_client)
-	print('start sleep')
-	time.sleep(60)
-	print('end sleep')
+        print('start sleep')
+        time.sleep(60)
+        print('end sleep')
     except SystemExit as e:
         print('Failed to restart domain! Wait_remote_vm')
         print(e)
