@@ -6,6 +6,7 @@ import numpy
 import pickle
 import json
 import networkx
+import time
 
 STAGES = [
     "Перезагрузка виртуальных машин (1/9)",
@@ -309,7 +310,10 @@ def wait_domain(vm):
         c_server = fabric.connection.Connection(host = 'w2', config = conn_config)
         c_client = fabric.connection.Connection(host = vm, config = conn_config, connect_timeout = 0)
 
-        wait_remote_vm(c_client)
+        #wait_remote_vm(c_client)
+	print('start sleep')
+	time.sleep(60)
+	print('end sleep')
     except SystemExit as e:
         print('Failed to restart domain! Wait_remote_vm')
         print(e)
