@@ -284,7 +284,7 @@ def restart_domain(vm):
 	
         #fabric.connection.Connection('127.0.0.1').execute(restart_remote_domain, domain, hosts=vm_config.user_alias[host])
         #fabric.api.execute(wait_remote_vm, hosts=vm_config.user_alias[vm])
-	restart_remote_domain(domain)
+        restart_remote_domain(domain)
     except SystemExit as e:
         print('Failed to restart domain! Wait_remote_vm')
         print(e)
