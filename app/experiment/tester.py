@@ -24,9 +24,11 @@ RUN_TIMEOUT = 2000
 RESTART_VMS_TIMEOUT = 50
 
 #TODO move IFMAP to models
+
+BORDER_SWITCH = 1234
 IF_MAP = { #interfaces on head to loaders 
-    'olya_at_w1loader1-clone': 'enp13s0f0', 
-    'fdmp_at_w1loader2-clone': 'enp13s0f1',
+    'olya_at_vm_fdmp': 'ens8',		# format ??
+    'olya_at_vm_fdmp2': 'ens9',
     #'fdmp_at_w1loader3-clone': 'enp15s0f1',
     #'fdmp_at_w1loader4': 'enp15s0f1',
     #'fdmp_at_w4loader1-clone': 'enp8s0f0',
@@ -34,21 +36,28 @@ IF_MAP = { #interfaces on head to loaders
     #'fdmp_at_w4loader3-clone': 'enp131s0f1',
     #'fdmp_at_w4loader4': 'enp15s0f0',
 }
-BORDER_SWITCH = 1234
 
 USER_MAP = {
-    "head": 'arccn',
-    "w1": 'arccn',
-    "w4": 'fdmp',
-    "w1loader1-clone": 'fdmp',
-    "w1loader2-clone": 'fdmp',
-    "w1loader3-clone": 'fdmp',
+    "head": 'olya',
+    #"w1": 'arccn',
+    "w2": 'fdmp',
+    "vm_fdmp": 'olya',
+    "vm_fdmp2": 'olya',
+    #"w1loader3-clone": 'fdmp',
     #"w1loader4": 'fdmp',
-    "w4loader1-clone": 'fdmp',
-    "w4loader2-clone": 'fdmp',
-    "w4loader3-clone": 'fdmp',
+    #"w4loader1-clone": 'fdmp',
+    #"w4loader2-clone": 'fdmp',
+    #"w4loader3-clone": 'fdmp',
     #"w4loader4": 'fdmp',
 }
+
+NAME_MAP = {
+    'head' : 'head',
+    'loader1' : 'vm_fdmp',
+    'loader2' : 'vm_fdmp2',
+    'user' : 'olya',
+}
+
 
 
 # head - where topology is
@@ -57,78 +66,78 @@ USER_MAP = {
 class VMConfig(object):
     def __init__(self):
         self.hosts = {
-            'head': '172.30.2.1',
+            'head': '192.168.122.3',
 
-            'w1': '172.30.2.11',
-            'w4': '172.30.2.14',
+            #'w1': '172.30.2.11',
+            'w2': '172.30.2.12',
 
-            'w1loader1-clone': '172.30.2.111',
-            'w1loader2-clone': '172.30.2.112',
-            'w1loader3-clone': '172.30.2.113',
+            'fdmp1_olyabel': '192.168.122.227',
+            'fdmp2_olyabel': '192.168.122.238',
+            #'w1loader3-clone': '172.30.2.113',
             #'w1loader4': '172.30.2.114',
-            'w4loader1-clone': '172.30.2.141',
-            'w4loader2-clone': '172.30.2.142',
-            'w4loader3-clone': '172.30.2.143',
+            #'w4loader1-clone': '172.30.2.141',
+            #'w4loader2-clone': '172.30.2.142',
+            #'w4loader3-clone': '172.30.2.143',
             #'w4loader4': '172.30.2.144',
         }
         self.vm_allocation = {
-            'w1loader1-clone': ['w1', 'w1loader1-clone'], #or is it username?
-            'w1loader2-clone': ['w1', 'w1loader2-clone'],
-            'w1loader3-clone': ['w1', 'w1loader3-clone'],
+            'vm_fdmp': ['w2', 'vm_fdmp'], #or is it username?
+            'vm_fdmp2': ['w2', 'vm_fdmp2'],
+            #'w1loader3-clone': ['w1', 'w1loader3-clone'],
             #'w1loader4': ['w1', 'w1loader4'],
-            'w4loader1-clone': ['w4', 'w4loader1-clone'],
-            'w4loader2-clone': ['w4', 'w4loader2-clone'],
-            'w4loader3-clone': ['w4', 'w4loader3-clone'],
+            #'w4loader1-clone': ['w4', 'w4loader1-clone'],
+            #'w4loader2-clone': ['w4', 'w4loader2-clone'],
+            #'w4loader3-clone': ['w4', 'w4loader3-clone'],
             #'w4loader4': ['w4', 'w4loader4'],
             
             
         }
         self.vm_data_if = {
-            'w1loader1-clone': ['ens9', '10.1.1.1'],
-            'w4loader1-clone': ['ens9', '10.1.1.2'],
-            'w1loader2-clone': ['ens9', '10.2.1.1'],
-            'w4loader2-clone': ['ens9', '10.2.1.2'],
-            'w1loader3-clone': ['ens9', '10.3.1.1'],
-            'w4loader3-clone': ['ens9', '10.3.1.2'],
+            'vm_fdmp': ['ens8', '10.1.1.1'],
+            #'w4loader1-clone': ['ens9', '10.1.1.2'],
+            'vm_fdmp2': ['ens8', '10.1.1.2'],
+            #'w4loader2-clone': ['ens9', '10.2.1.2'],
+            #'w1loader3-clone': ['ens9', '10.3.1.1'],
+            #'w4loader3-clone': ['ens9', '10.3.1.2'],
             #'w1loader4': ['ens9', '10.4.1.1'],
             #'w4loader4': ['ens9', '10.4.1.2'],
             
             
         }
         self.vm_qos_classes = {
-            133 : ['w1loader1-clone'], #kbps
-            1200 : ['w4loader1-clone'],
-            500 : ['w1loader2-clone'],
-            2750 : ['w4loader2-clone'],
-            800 : ['w1loader3-clone'],
-            5000 : ['w4loader3-clone'],
+            133 : ['vm_fdmp'], #kbps
+            #1200 : ['w4loader1-clone'],
+            500 : ['vm_fdmp2'],
+            #2750 : ['w4loader2-clone'],
+            #800 : ['w1loader3-clone'],
+            #5000 : ['w4loader3-clone'],
         }
         self.vm_flow_share = {
-            'w1loader1-clone' : 0.01, # <144p
-            'w1loader2-clone' : 0.1, # 144-240p
-            'w1loader3-clone' : 0.1, # 240-360p
-            'w4loader1-clone' : 0.2, # 360-480p
-            'w4loader2-clone' : 0.4, # 480-720p
-            'w4loader3-clone' : 0.2  # >720p
+            'vm_fdmp' : 0.01, # <144p
+            'vm_fdmp2' : 0.1, # 144-240p
+            #'w1loader3-clone' : 0.1, # 240-360p
+            #'w4loader1-clone' : 0.2, # 360-480p
+            #'w4loader2-clone' : 0.4, # 480-720p
+            #'w4loader3-clone' : 0.2  # >720p
         }
         self.vm_transfer_size = {
-            415625 : ['w1loader1-clone'],
-            156250000 : ['w1loader2-clone'],
-            250000000 : ['w1loader3-clone'],
-            375000000 : ['w4loader1-clone'],
-            859375000 : ['w4loader2-clone'],
-            1562500000 : ['w4loader3-clone'],
+            41562500 : ['vm_fdmp'],
+            156250000 : ['vm_fdmp2'],
+            #250000000 : ['w1loader3-clone'],
+            #375000000 : ['w4loader1-clone'],
+            #859375000 : ['w4loader2-clone'],
+            #1562500000 : ['w4loader3-clone'],
             #100000000 : ['w1loader1-clone', 'w4loader1-clone'],
             #100000000 : ['w1loader2-clone', 'w4loader2-clone'],
             #100000000 : ['w1loader3-clone', 'w4loader3-clone'],
         }
         self.vm_bitrate = {
-            'w1loader1-clone': 133000, 
-            'w1loader2-clone': 500000,
-            'w1loader3-clone': 800000,
-            'w4loader1-clone': 1200000,
-            'w4loader2-clone': 2750000, #bits/sec
-            'w4loader3-clone': 5000000,
+            'vm_fdmp': 133000, 
+            'vm_fdmp2': 500000,
+            #'w1loader3-clone': 800000,
+            #'w4loader1-clone': 1200000,
+            #'w4loader2-clone': 2750000, #bits/sec
+            #'w4loader3-clone': 5000000,
         }
         self.username = USER_MAP
         self.user_alias = {x: '{}_at_{}'.format(self.username[x], x) for x in self.hosts.keys()}
@@ -222,7 +231,7 @@ def getDistr(distr, duration, subflows, seed):
         resultArray = genStatic(subflows)
     return resultArray
 
-
+'''
 def restart_domain(vm):
     from app.models import Server
 
@@ -244,6 +253,36 @@ def restart_domain(vm):
         c_client = fabric.connection.Connection(host = vm.vmname, config = conn_config, connect_timeout = 0)
 
         restart_remote_domain(c_server, vm.vmname)
+    except SystemExit as e:
+        print('Failed to restart domain! Wait_remote_vm')
+        print(e)
+        raise
+'''
+
+def restart_domain(vm):
+    @fabric.api.task
+    def restart_remote_domain(domain):
+        print("Running command pwd")
+        fabric.api.run('pwd')
+        print("Trying to reset VM")
+        if fabric.api.run('virsh reset {}'.format(domain)).failed:
+            raise RuntimeError('Failed to reset VM!')
+
+    @fabric.api.task
+    def wait_remote_vm():
+        with fabric.api.settings(
+            connection_attempts=10,
+            timeout=3,
+        ):
+            if fabric.api.run('uptime').failed:
+                raise RuntimeError('Failed to connect VM!')
+
+    #with fabric.api.hide('everything'):
+    try:
+        host, domain = vm_config.vm_allocation[vm]
+        print(vm_config.user_alias[host])
+        fabric.api.execute(restart_remote_domain, domain, hosts=vm_config.user_alias[host])
+        #fabric.api.execute(wait_remote_vm, hosts=vm_config.user_alias[vm])
     except SystemExit as e:
         print('Failed to restart domain! Wait_remote_vm')
         print(e)
