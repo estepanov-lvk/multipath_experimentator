@@ -264,9 +264,9 @@ def restart_domain(vm):
     #@fabric.api.task
     def restart_remote_domain(domain):
         print("Running command pwd")
-        fabric.connection.Connection('w2').run('pwd')
+        fabric.connection.Connection('w2', config = conn_config).run('pwd')
         print("Trying to reset VM")
-        if fabric.connection.Connection('w2').run('virsh reset {}'.format(domain)).failed:
+        if fabric.connection.Connection('w2', config = conn_config).run('virsh reset {}'.format(domain)).failed:
             raise RuntimeError('Failed to reset VM!')
 
     #@fabric.api.task
@@ -275,7 +275,7 @@ def restart_domain(vm):
             connection_attempts=10,
             timeout=3,
         ):
-            if fabric.connection.Connection('w2').run('uptime').failed:
+            if fabric.connection.Connection('w2', config = conn_config).run('uptime').failed:
                 raise RuntimeError('Failed to connect VM!')
 
     #with fabric.api.hide('everything'):
