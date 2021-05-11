@@ -58,6 +58,7 @@ NAME_MAP = {
     'user' : 'olya',
 }
 
+VMs = ['head', 'vm_fdmp', 'vm_fdmp2']
 
 
 # head - where topology is
@@ -950,7 +951,8 @@ class Runner:
         from app.models import VM
 
         try:
-            vms = VM.query.all()
+            #vms = VM.query.all()
+            vms = VMs
             self_args = [self for x in vms]
             #TODO make parallel
             for vm in vms:
