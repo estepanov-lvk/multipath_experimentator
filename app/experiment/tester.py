@@ -62,6 +62,8 @@ NAME_MAP = {
 
 VMs = ['vm_fdmp', 'vm_fdmp2']
 
+head_config.user = 'olya'
+head_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@head']}
 
 # head - where topology is
 # w1, w2, ..., w4 - where loaders are
@@ -339,8 +341,8 @@ def start_topology(exp):
     #head_user = head.username
     #TODO: make topology on right user
     head_user = 'olya'
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
-    if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./run_1st.py -b {} {} {}"'.format(
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
+    if head_c.run('cd /home/{}/netbuilder; ./run_1st.py -b {} {} {}'.format(
                     head_user,
                     topo,
                     active,
@@ -994,7 +996,7 @@ class Runner:
             print(head_config)
             c_server = fabric.connection.Connection(host = 'head', config = head_config)
             #TODO setup sudo password?
-            c_server.run('sudo bash -c "cd /home/olya/netbuilder; ./delete.sh"')
+            c_server.run('cd /home/olya/netbuilder; ./delete.sh')
         except BaseException as e:
             print("Failed to clean up testbed!")
             print(e)
