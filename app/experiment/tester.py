@@ -3,6 +3,8 @@ import concurrent.futures
 import fabric
 from app.stand.connections import conn_config
 from app.stand.connections import head_config
+from app.stand.connections import vm1_config
+from app.stand.connections import vm2_config
 import numpy
 import pickle
 import json
@@ -64,6 +66,14 @@ VMs = ['vm_fdmp', 'vm_fdmp2']
 
 head_config.user = 'olya'
 head_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@head']}
+vm1_config.user = 'olya'
+vm1_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@vm_fdmp']}
+vm2_config.user = 'olya'
+vm2_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@vm_fdmp2']}
+
+VMs_config_list = [vm1_config, vm2_config]
+
+
 
 # head - where topology is
 # w1, w2, ..., w4 - where loaders are
@@ -683,9 +693,9 @@ def setLoaderQos(subflows, protocol):
                 raise
 
 
-def start_iperf3_servers(params):
+def start_iperf3_servers(params, vconfig):
     import textwrap
-    vm_c = fabric.connection.Connection(host = params['remote_server_name'].split('_')[-1], config = conn_config)
+    vm_c = fabric.connection.Connection(host = params['remote_server_name'], config = vconfig)
     vm_c.run(' '.join(
             textwrap.dedent('''
                 parallel
@@ -725,10 +735,10 @@ def send_distribution_files(vm_c, exp, params):
         vm_c.put(io.StringIO(distrLines), 'distrFile{}.txt'.format(p_id))
         print(distrLines)
 
-def start_iperf3_clients(params, exp):
+def start_iperf3_clients(params, exp, vconfig):
         import textwrap
         import math
-        vm_c = fabric.connection.Connection(host = params['remote_client_name'].split('_')[-1], config = conn_config)
+        vm_c = fabric.connection.Connection(host = params['remote_client_name'], config = vconfig)
          
         print("load_flow_number=", str(exp.flows),  " kwargs client flows = ", str(params['client_flows']))
         send_distribution_files(vm_c, exp, params)
@@ -1056,8 +1066,10 @@ class Runner:
         #from app.models import VM
         #vms = VM.query.all()
         vms = VMs
+        index_vm = 0
         for vm in vms:
-            vm_c = fabric.connection.Connection(host = vm, config = conn_config)
+            vm_c = fabric.connection.Connection(host = vm, config = VMs_config_list[index_vm])
+            index_vm += 1
             vm_c.run('rm -rf iperf3 || true')
             vm_c.run('pkill -HUP parallel || true')
         
@@ -1098,16 +1110,20 @@ class Runner:
 
         loader_pairs = unite_loaders(self.loader_pairs)
         threads = []
+        index_vm = 0
         for p in loader_pairs:
-            thr = threading.Thread(target = start_iperf3_servers, args = (p,))
+            thr = threading.Thread(target = start_iperf3_servers, args = (p, VMs_config_list[index_vm]))
             thr.start()
             threads.append(thr)
+            index_vm += 1
         time.sleep(5)
+        index_vm = 0
         for p in loader_pairs:
-            thr = threading.Thread(target = start_iperf3_clients, args = (p, exp))
+            thr = threading.Thread(target = start_iperf3_clients, args = (p, exp, VMs_config_list[index_vm]))
             thr.start()
             threads.append(thr)
             print("client has started")
+            index_vm += 1
 
         for thr in threads:
             thr.join(timeout = exp.time)
