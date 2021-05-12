@@ -29,8 +29,8 @@ RESTART_VMS_TIMEOUT = 50
 
 BORDER_SWITCH = 1234
 IF_MAP = { #interfaces on head to loaders 
-    'olya_at_vm_fdmp': 'ens8',		# format ??
-    'olya_at_vm_fdmp2': 'ens9',
+    'vm_fdmp': 'ens8',		# format ??
+    'vm_fdmp2': 'ens9',
     #'fdmp_at_w1loader3-clone': 'enp15s0f1',
     #'fdmp_at_w1loader4': 'enp15s0f1',
     #'fdmp_at_w4loader1-clone': 'enp8s0f0',
@@ -400,11 +400,13 @@ def set_bitrate_in_json():
     #qos_list = dump["qos"]
     print("TEST2")
     new_qos_list = []
+    num2 = 1
     for vm_name in vm_config.vm_bitrate:
         print("vm_name=" + vm_name)
-        num1 = vm_name[1]
-        num2 = vm_name[8]
-        ip = "10." + str(num1) + ".1." + str(num2)
+        #num1 = vm_name[1]
+        #num2 = 1
+        ip = "10.1.1." + str(num2)
+        num2 += 1
         for qos_dict in dump['stand-data']['qos']:
             if qos_dict["s_ip"] == ip:
                 qos_dict["bw"] = vm_config.vm_bitrate[vm_name] * 0.001
@@ -436,7 +438,7 @@ def create_controller_config(topo, subflow, poles, proto):
     dict_edges = {}
     list_edges = []
     print('what path where START')
-    with open("/home/olya/netbuilder/topo/" + topo, 'rb') as fp:
+    with open("/home/fdmp/olya_bel/netbuilder/topo/" + topo, 'rb') as fp:
         graph = pickle.load(fp)
     print('END')
     
@@ -1007,8 +1009,11 @@ class Runner:
         #TODO; check experiment parameters (no rules for subnum 1)
         try:
             start_topology(exp)
+            print('SET QOS START')
             set_qos(exp)
+            print('SET QOS END')
             self.loader_pairs = self.generate_loader_pairs(exp.flows)
+            print(self.loader_pairs)
             setup_multiloader(self.loader_pairs, exp)
             start_controller(exp)
             start_watch(exp)
