@@ -2,6 +2,7 @@ import asyncio
 import concurrent.futures
 import fabric
 from app.stand.connections import conn_config
+from app.stand.connections import head_config
 import numpy
 import pickle
 import json
@@ -987,7 +988,11 @@ class Runner:
         #user_head = head.username
         #TODO: we don't need in cleanup, if the topology is same
         try:
-            c_server = fabric.connection.Connection(host = 'head', config = conn_config)
+            print(conn_config)
+            head_config.user = 'olya'
+            head_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@head']}
+            print(head_config)
+            c_server = fabric.connection.Connection(host = 'head', config = head_config)
             #TODO setup sudo password?
             c_server.run('sudo bash -c "cd /home/olya/netbuilder; ./delete.sh"')
         except BaseException as e:

@@ -4,6 +4,9 @@ SSHCONFIG_PATH = "./app/stand/"
 conn_config = fabric.Config(runtime_ssh_path=SSHCONFIG)
 conn_config.load_ssh_config()
 
+head_config = fabric.Config(runtime_ssh_path="./app/stand/ssh_config_head")
+head_config.load_ssh_config()
+
 
 def make_ssh_config(filename):
     import sys
