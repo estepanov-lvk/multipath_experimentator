@@ -254,7 +254,8 @@ def restart_domain(vm):
 
     try:
         servername = Server.query.filter_by(id = vm.server_id).all()[0].servername
-        c_server = fabric.connection.Connection(host = servername, config = conn_config)
+		c_server = fabric.connection.Connection(host = servername, config = 
+		)
         c_client = fabric.connection.Connection(host = vm.vmname, config = conn_config, connect_timeout = 0)
 
         restart_remote_domain(c_server, vm.vmname)
@@ -359,8 +360,8 @@ def set_qos(exp):
     #head_user = head.username
     #TODO: make topology on right user
     head_user = 'olya'
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
-    if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./set_qos.py --link_opts rate={},loss=10,rtt={},jitter=0"'.format(
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
+    if head_c.run('cd /home/{}/netbuilder; ./set_qos.py --link_opts rate={},loss=10,rtt={},jitter=0'.format(
                     head_user, RATE, RTT)).failed:
         raise RuntimeError('Failed on set qos')
 
@@ -383,10 +384,10 @@ def setup_multiloader(loader_pairs, exp):
 
     active = '--active {} {}'.format(exp.poles, exp.poles_seed)
     head_user = 'olya'
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
     head_c.put(io.StringIO(result_config), remote='/home/{}/netbuilder/testbed.json'.format(head_user))
         
-    if head_c.run('sudo -H bash -c "cd /home/{}/netbuilder; ./multiloader.py {} net.dump {} {}"'.format(head_user, active, BORDER_SWITCH, exp.routes_seed)).failed:
+    if head_c.run('cd /home/{}/netbuilder; ./multiloader.py {} net.dump {} {}'.format(head_user, active, BORDER_SWITCH, exp.routes_seed)).failed:
         raise RuntimeError('Failed on multiloader')
 
 
@@ -435,7 +436,7 @@ def create_controller_config(topo, subflow, poles, proto):
     dict_edges = {}
     list_edges = []
     print('what path where START')
-    with open("/home/fdmp/netbuilder/topo/" + topo, 'rb') as fp:
+    with open("/home/olya/netbuilder/topo/" + topo, 'rb') as fp:
         graph = pickle.load(fp)
     print('END')
     
@@ -483,7 +484,7 @@ def create_controller_config(topo, subflow, poles, proto):
 def start_controller(exp):
     create_controller_config(exp.topo, exp.subflow, exp.poles, exp.protocol)
     set_bitrate_in_json()
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
 
     head_c.put('route_config.json', '/home/olya/runos/runos-settings.json')
 
@@ -492,12 +493,12 @@ def start_controller(exp):
         raise RuntimeError('Failed on runos start')
 
 def kill_controller(exp):
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
     if head_c.run('bash -c "pkill runos"').failed:
         raise RuntimeError('Failed to kill controller process!')
 
 def start_watch(exp):
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
     #TODO check that script is on the head (beforehand)
 
     if head_c.run('bash -c "/home/olya/watch_script.sh"').failed:
@@ -505,7 +506,7 @@ def start_watch(exp):
 
 def kill_watch(exp):
     SWITCH = 1234 #TODO add switch from experiment parameters
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
     if head_c.run(str('''bash -c "pkill -f 'watch -n 1 sudo ovs-ofctl dump-flows -O openflow13 {} >> {}_result.txt'"'''.format(SWITCH, SWITCH))).failed:
         raise RuntimeError('Failed to kill watch process')
 
@@ -569,7 +570,7 @@ def setup_loader(exp, vm):
         raise
 
 def collect_collectd_results(result_directory):
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
     try:
         if head_c.run('pkill -HUP --pidfile ~/collectd.pid').failed:
             raise RuntimeError('Failed to stop collectd!')
@@ -587,7 +588,7 @@ def collect_collectd_results(result_directory):
 
 
 def collect_controller_results(result_directory):
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
     try:
         head_c.get('runos/result.txt', '{}/runos_result.txt'.format(result_directory))
         if head_c.run('rm -f runos/result.txt').failed:
@@ -599,7 +600,7 @@ def collect_controller_results(result_directory):
 
 def collect_watch_results(result_directory):
     SWITCH = 1234 #TODO make from experiment config
-    head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_config)
     try:
         head_c.get('{}_result.txt'.format(SWITCH), '{}/{}_result.txt'.format(result_directory, SWITCH))
         if head_c.run('rm -f {}_result.txt'.format(SWITCH)).failed:
@@ -1058,7 +1059,7 @@ class Runner:
     def start_collectd(self, exp):
         import io
         import textwrap
-        head_c = fabric.connection.Connection(host = 'head', config = conn_config)
+        head_c = fabric.connection.Connection(host = 'head', config = head_config)
         if head_c.run('[ -f ~/collectd.pid ] && pkill -HUP --pidfile ~/collectd.pid || true').failed:
             raise RuntimeError('Failed to stop collectd launched before!')
         if head_c.run('rm -rf /home/fdmp/csv || true').failed:
