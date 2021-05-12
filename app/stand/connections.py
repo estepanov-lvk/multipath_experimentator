@@ -7,6 +7,14 @@ conn_config.load_ssh_config()
 head_config = fabric.Config(runtime_ssh_path="./app/stand/ssh_config_head")
 head_config.load_ssh_config()
 
+vm1_config = fabric.Config(runtime_ssh_path="./app/stand/ssh_config_vm")
+vm1_config.load_ssh_config()
+
+vm2_config = fabric.Config(runtime_ssh_path="./app/stand/ssh_config_vm2")
+vm2_config.load_ssh_config()
+
+#TODO root head
+
 
 def make_ssh_config(filename):
     import sys
