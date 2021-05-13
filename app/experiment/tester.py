@@ -5,6 +5,7 @@ from app.stand.connections import conn_config
 from app.stand.connections import head_config
 from app.stand.connections import vm1_config
 from app.stand.connections import vm2_config
+from app.stand.connections import head_root_config
 import numpy
 import pickle
 import json
@@ -70,6 +71,10 @@ vm1_config.user = 'olya'
 vm1_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@vm_fdmp']}
 vm2_config.user = 'olya'
 vm2_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@vm_fdmp2']}
+
+head_root_config.user = 'root'
+head_root_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/root@head']}
+
 
 VMs_config_list = [vm1_config, vm2_config]
 
@@ -352,7 +357,7 @@ def start_topology(exp):
     #head_user = head.username
     #TODO: make topology on right user
     head_user = 'olya'
-    head_c = fabric.connection.Connection(host = 'head', config = head_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_root_config)
     if head_c.run('cd /home/{}/netbuilder; ./run_1st.py -b {} {} {}'.format(
                     head_user,
                     topo,
@@ -370,10 +375,12 @@ def set_qos(exp):
     #head_user = head.username
     #TODO: make topology on right user
     head_user = 'olya'
-    head_c = fabric.connection.Connection(host = 'head', config = head_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_root_config)
+    print('================SETQOS1=================')
     if head_c.run('cd /home/{}/netbuilder; ./set_qos.py --link_opts rate={},loss=10,rtt={},jitter=0'.format(
                     head_user, RATE, RTT)).failed:
         raise RuntimeError('Failed on set qos')
+    print('===============SETQOS2==================')
 
 def setup_multiloader(loader_pairs, exp):
     import io
@@ -394,11 +401,16 @@ def setup_multiloader(loader_pairs, exp):
 
     active = '--active {} {}'.format(exp.poles, exp.poles_seed)
     head_user = 'olya'
-    head_c = fabric.connection.Connection(host = 'head', config = head_config)
+    head_c = fabric.connection.Connection(host = 'head', config = head_root_config)
+    print('===============SETQOS3==================')
     head_c.put(io.StringIO(result_config), remote='/home/{}/netbuilder/testbed.json'.format(head_user))
-        
+    print('===============SETQOS4==================')
+
+    print('===============SETQOS5==================')
+
     if head_c.run('cd /home/{}/netbuilder; ./multiloader.py {} net.dump {} {}'.format(head_user, active, BORDER_SWITCH, exp.routes_seed)).failed:
         raise RuntimeError('Failed on multiloader')
+    print('===============SETQOS6==================')
 
 
 #TODO make normal QoS
@@ -1068,9 +1080,13 @@ class Runner:
         vms = VMs
         index_vm = 0
         for vm in vms:
+            print(vm)
+            print(VMs_config_list[index_vm])
             vm_c = fabric.connection.Connection(host = vm, config = VMs_config_list[index_vm])
             index_vm += 1
+            print("LALALALAAL")
             vm_c.run('rm -rf iperf3 || true')
+            print("LLLLLLLLLLALALAAAAAAAAAAAAAALALL")
             vm_c.run('pkill -HUP parallel || true')
         
     def start_collectd(self, exp):
