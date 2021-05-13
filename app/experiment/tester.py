@@ -618,10 +618,10 @@ def collect_collectd_results(result_directory):
     try:
         if head_c.run('pkill -HUP --pidfile ~/collectd.pid').failed:
             raise RuntimeError('Failed to stop collectd!')
-        if head_c.run('tar -czf csv.tar.gz /home/fdmp/csv').failed:
+        if head_c.run('tar -czf csv.tar.gz /home/olya/csv').failed:
             raise RuntimeError('Failed to archive collectd results!')
         head_c.get('csv.tar.gz', '{}/csv.tar.gz'.format(result_directory))
-        if head_c.run('rm -rf /home/fdmp/csv').failed:
+        if head_c.run('rm -rf /home/olya/csv').failed:
             raise RuntimeError('Failed to remove collected data directory!')
         if head_c.run('rm -rf csv.tar.gz').failed:
             raise RuntimeError('Failed to remove collected data archive!')
@@ -820,7 +820,7 @@ def start_iperf3_clients(params, exp, vconfig):
                 -b {bitrate}
                 -l 1000
                 --json
-                -E /home/fdmp/distrFile{{4}}.txt
+                -E /home/olya/distrFile{{4}}.txt
                 
                 
                 ::: {server_ports}
@@ -1165,13 +1165,13 @@ class Runner:
             threads.append(thr)
             index_vm += 1
         time.sleep(5)
-        index_vm = 0
+        index_vm = 1
         for p in loader_pairs:
             thr = threading.Thread(target = start_iperf3_clients, args = (p, exp, VMs_config_list[index_vm]))
             thr.start()
             threads.append(thr)
             print("client has started")
-            index_vm += 1
+            index_vm -= 1
 
         for thr in threads:
             thr.join(timeout = exp.time)
