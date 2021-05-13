@@ -17,6 +17,12 @@ vm2_config.load_ssh_config()
 head_root_config = fabric.Config(runtime_ssh_path="./app/stand/ssh_config_head_root")
 head_root_config.load_ssh_config()
 
+vm1_root_config = fabric.Config(runtime_ssh_path="./app/stand/ssh_config_vm_root")
+vm1_root_config.load_ssh_config()
+
+vm2_root_config = fabric.Config(runtime_ssh_path="./app/stand/ssh_config_vm2_root")
+vm2_root_config.load_ssh_config()
+
 
 
 def make_ssh_config(filename):

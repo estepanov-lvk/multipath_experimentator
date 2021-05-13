@@ -5,6 +5,8 @@ from app.stand.connections import conn_config
 from app.stand.connections import head_config
 from app.stand.connections import vm1_config
 from app.stand.connections import vm2_config
+from app.stand.connections import vm1_root_config
+from app.stand.connections import vm2_root_config
 from app.stand.connections import head_root_config
 import numpy
 import pickle
@@ -72,11 +74,18 @@ vm1_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@vm_fdmp']}
 vm2_config.user = 'olya'
 vm2_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@vm_fdmp2']}
 
+vm1_root_config.user = 'root'
+vm1_root_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/root@vm_fdmp']}
+vm2_root_config.user = 'root'
+vm2_root_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/root@vm_fdmp2']}
+
+
 head_root_config.user = 'root'
 head_root_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/root@head']}
 
 
 VMs_config_list = [vm1_config, vm2_config]
+VMs_root_config_list = [vm1_root_config, vm2_root_config]
 
 
 
@@ -534,60 +543,71 @@ def kill_watch(exp):
     if head_c.run(str('''bash -c "pkill -f 'watch -n 1 sudo ovs-ofctl dump-flows -O openflow13 {} >> {}_result.txt'"'''.format(SWITCH, SWITCH))).failed:
         raise RuntimeError('Failed to kill watch process')
 
-def setup_loader(exp, vm):
+def setup_loader(exp, vm, vm_conf):
     def setup_interface(vm_c, iface, ip, subnum):
-        vm_c.run('sudo -H bash -c "ifconfig {} down"'.format(iface))
-        vm_c.run('sudo -H bash -c "ip addr flush dev {}"'.format(iface))
+        vm_c.run('ifconfig {} down'.format(iface))
+        vm_c.run('ip addr flush dev {}'.format(iface))
         for i in range(subnum):
             new_ip = ip.split('.')
             new_ip[2] = str(i + 1)
             new_ip = '.'.join(new_ip)
 
-            if vm_c.run('sudo -H bash -c "ip addr add {}/24 dev {}"'.format(new_ip, iface)).failed:
+            if vm_c.run('ip addr add {}/24 dev {}'.format(new_ip, iface)).failed:
                 raise RuntimeError('Failed to assign address to interface!')
 
-        if vm_c.run('sudo -H bash -c "ifconfig {} txqueuelen 8000"'.format(iface)).failed:
+        if vm_c.run('ifconfig {} txqueuelen 8000'.format(iface)).failed:
             raise RuntimeError('Failed to tune txqueuelen')
-        if vm_c.run('sudo -H bash -c "ifconfig {} up"'.format(iface)).failed:
+        if vm_c.run('ifconfig {} up'.format(iface)).failed:
             raise RuntimeError('Failed to set up interface!')
-        if vm_c.run('sudo -H bash -c "tc qdisc replace dev {} root handle 1: fq limit 400000"'.format(iface)).failed:
+        if vm_c.run('tc qdisc replace dev {} root handle 1: fq limit 400000'.format(iface)).failed:
             raise RuntimeError('Failed to set up tc')
         return
 
     def setup_multipath(vm_c, mp):
-        if vm_c.run('sudo -H bash -c "sysctl -w net.mptcp.mptcp_enabled={}"'.format(mp)).failed:
+        if vm_c.run('sysctl -w net.mptcp.mptcp_enabled={}'.format(mp)).failed:
             raise RuntimeError('Failed to enable MPTCP!')
-        if vm_c.run('sudo -H bash -c "sysctl -w net.mptcp.mptcp_debug=1"').failed:
+        if vm_c.run('sysctl -w net.mptcp.mptcp_debug=1').failed:
             raise RuntimeError('Failed to enable MPTCP debug')
         tcp_mem = "sysctl -w net.ipv4.tcp_mem='16777216 16777216 16777216'"
-        if vm_c.run('sudo -H bash -c "{}"'.format(tcp_mem)).failed:
+        if vm_c.run('{}'.format(tcp_mem)).failed:
             raise RuntimeError('Failed to tune tcp_mem')
-        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_syncookies=0"').failed:
+        if vm_c.run('sysctl -w net.ipv4.tcp_syncookies=0').failed:
             raise RuntimeError('Failed to tune syn cookies')
-        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_max_syn_backlog=1024"').failed:
+        if vm_c.run('sysctl -w net.ipv4.tcp_max_syn_backlog=1024').failed:
             raise RuntimeError('Failed to tune tcp_max_syn_backlog')
-        if vm_c.run('sudo -H bash -c "sysctl -w net.core.somaxconn=1024"').failed:
+        if vm_c.run('sysctl -w net.core.somaxconn=1024').failed:
             raise RuntimeError('Failed to tune net.core.sorted')
-        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_syn_retries=6"').failed:
+        if vm_c.run('sysctl -w net.ipv4.tcp_syn_retries=6').failed:
             raise RuntimeError('Failed to set up tcp syn_retries')
-        if vm_c.run('sudo -H bash -c "sysctl -w net.mptcp.mptcp_syn_retries=5"').failed:
+        if vm_c.run('sysctl -w net.mptcp.mptcp_syn_retries=5').failed:
             raise RuntimeError('Failed to set up mptcp syn_retries')
 
     def setup_cc(vm_c, cc):
-        if vm_c.run('sudo -H bash -c "sysctl -w net.ipv4.tcp_congestion_control={}"'.format(cc)).failed:
+        if vm_c.run('sysctl -w net.ipv4.tcp_congestion_control={}'.format(cc)).failed:
             raise RuntimeError('Failed to configure congestion control!')
 
     #TODO interfaces
     iface, ip = vm_config.vm_data_if[vm]
     subnum = exp.subflow
     #TODO root? 
-    vm_c = fabric.connection.Connection(host = vm, config = conn_config)
+#    for index_vm in range(2):
+
+    vm_c = fabric.connection.Connection(host = vm, config = vm_conf)
 
     try: 
         # with head_c.hide('everything'):
+        print('setup interface')
         setup_interface(vm_c, iface, ip, subnum)
+        print('setup interface2')
+
+        print('setup multipath1')
+
         setup_multipath(vm_c, int(exp.mode == 'mp'))
+        print('setup multipath2')
+
         setup_cc(vm_c, exp.cc)
+        print('setup interface')
+
     except SystemExit as e:
         print("Failed to configure vm")
         print(e)
@@ -664,31 +684,34 @@ def setLoaderQos(subflows, protocol):
     #from app.models import VM
 
     def modifyQos(vm_c, qos):
-        if vm_c.run('sudo -H bash -c "echo {} > /proc/sys/net/fdmp/qos_req_default"'.format(qos)).failed:
+        if vm_c.run('echo {} > /proc/sys/net/fdmp/qos_req_default'.format(qos)).failed:
             raise RuntimeError("Failed to modify qos!")
     
     def modifyPathManager(vm_c):
-        if vm_c.run('sudo -H bash -c "echo default > /proc/sys/net/mptcp/mptcp_path_manager"').failed:
+        if vm_c.run('echo default > /proc/sys/net/mptcp/mptcp_path_manager').failed:
             raise RuntimeError("Failed to modify path manager!")
     def setPathManagerToMptcp(vm_c):
-        if vm_c.run('sudo -H bash -c "echo ndiffports > /proc/sys/net/mptcp/mptcp_path_manager"').failed:
+        if vm_c.run('echo ndiffports > /proc/sys/net/mptcp/mptcp_path_manager').failed:
             raise RuntimeError("Failed to set path to mptcp!")
 
     def setSubflows(vm_c, subflows):
-        if vm_c.run('sudo -H bash -c "' + 'echo ' + str(subflows) + ' > /proc/sys/net/fdmp/fdmp_subflows_num"').failed:
+        if vm_c.run('echo ' + str(subflows) + ' > /proc/sys/net/fdmp/fdmp_subflows_num').failed:
             raise RuntimeError("Failed to modify subflow number!")
     def disableFdmp(vm_c):
-        if vm_c.run('sudo -H bash -c "echo 0 > /proc/sys/net/fdmp/fdmp_enabled"').failed:
+        if vm_c.run('echo 0 > /proc/sys/net/fdmp/fdmp_enabled').failed:
             raise RuntimeError("Failed to disable fdmp!")
     def enableFdmp(vm_c):
-        if vm_c.run('sudo -H bash -c "echo 1 > /proc/sys/net/fdmp/fdmp_enabled"').failed:
+        if vm_c.run('echo 1 > /proc/sys/net/fdmp/fdmp_enabled').failed:
             raise RuntimeError("failed to enable fdmp!")
     
+    index_vm = 0
     for key in vm_config.vm_qos_classes:
         print(key)
+        #index_vm = 0
         for loader_name in vm_config.vm_qos_classes[key]:
             #print("key = " + key + " loader name=" + loader_name)
-            vm_c = fabric.connection.Connection(host = loader_name, config = conn_config)
+            vm_c = fabric.connection.Connection(host = loader_name, config = VMs_root_config_list[index_vm])
+            index_vm += 1
             try:
                 if protocol == 'fdmp':
                     print("PROTOCOL = FDMP")
@@ -707,6 +730,7 @@ def setLoaderQos(subflows, protocol):
 
 def start_iperf3_servers(params, vconfig):
     import textwrap
+    print(params['remote_server_name'])
     vm_c = fabric.connection.Connection(host = params['remote_server_name'], config = vconfig)
     vm_c.run(' '.join(
             textwrap.dedent('''
@@ -776,6 +800,7 @@ def start_iperf3_clients(params, exp, vconfig):
                 flow_number = str(math.ceil(exp.flows * vm_config.vm_flow_share[vm_name]))
         if int(flow_number) == 0:
             flow_number = "1"
+        print(params['remote_client_name'])
         result = vm_c.run(' '.join(
             textwrap.dedent('''
                 parallel
@@ -910,8 +935,8 @@ class Runner:
                  #TODO make with vm
                  pair1['remote_server_name'] = get_remote_server_name(i)
                  pair1['remote_client_name'] = get_remote_client_name(i)
-                 pair1['server_ip'] = pair2['client_ip'] = '10.{}.1.2'.format((i // 2) % MAX_PAIRS + 1)
-                 pair2['server_ip'] = pair1['client_ip'] = '10.{}.1.1'.format((i // 2) % MAX_PAIRS + 1)
+                 pair1['server_ip'] = pair2['client_ip'] = '10.{}.1.1'.format((i // 2) % MAX_PAIRS + 1)
+                 pair2['server_ip'] = pair1['client_ip'] = '10.{}.1.2'.format((i // 2) % MAX_PAIRS + 1)
                  pair1['distrSeed'] = seedBase + i
                  pair2['distrSeed'] = seedBase + i + 1
                  loaders.append(pair1)
@@ -1016,10 +1041,10 @@ class Runner:
         #TODO: we don't need in cleanup, if the topology is same
         try:
             print(conn_config)
-            head_config.user = 'olya'
-            head_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/olya@head']}
+            head_config.user = 'root'
+            head_config.connect_kwargs = {'key_filename': ['/home/fdmp/.ssh/root@head']}
             print(head_config)
-            c_server = fabric.connection.Connection(host = 'head', config = head_config)
+            c_server = fabric.connection.Connection(host = 'head', config = head_root_config)
             #TODO setup sudo password?
             c_server.run('cd /home/olya/netbuilder; ./delete.sh')
         except BaseException as e:
@@ -1054,6 +1079,7 @@ class Runner:
             vms = VMs
             n_processes = len(vms)
             param_list = []
+            print("setup1")
             if exp.mode == 'mixed':
                 for num in range(n_processes):
                     p = dict(params)
@@ -1065,11 +1091,17 @@ class Runner:
                         p['mode'] = 'mp'
                     param_list.append(p)
             #TODO mixed mode
-                    
+            vm_index = 0   
+            print("setup2")
+     
             for vm in vms:
-                setup_loader(exp, vm)
+                setup_loader(exp, vm, VMs_root_config_list[vm_index])
+                vm_index += 1
+            print("setup3")
 
             setLoaderQos(exp.subflow, exp.protocol)
+            print("setup4")
+
         except BaseException as e:
             print('Failed to setup vms!')
             print(e)
@@ -1095,7 +1127,7 @@ class Runner:
         head_c = fabric.connection.Connection(host = 'head', config = head_config)
         if head_c.run('[ -f ~/collectd.pid ] && pkill -HUP --pidfile ~/collectd.pid || true').failed:
             raise RuntimeError('Failed to stop collectd launched before!')
-        if head_c.run('rm -rf /home/fdmp/csv || true').failed:
+        if head_c.run('rm -rf /home/olya/csv || true').failed:
             raise RuntimeError('Failed to clean up csv folder!')
         head_c.put(io.StringIO(
                     textwrap.dedent("""
@@ -1108,11 +1140,11 @@ class Runner:
                         </Plugin>
                         <Plugin logfile>
                             LogLevel info
-                            File "/home/fdmp/collectd.log"
+                            File "/home/olya/collectd.log"
                             Timestamp true
                         </Plugin>
                         <Plugin csv>
-                            DataDir "/home/fdmp/csv"
+                            DataDir "/home/olya/csv"
                         </Plugin>
                     """)),
                     'collectd.conf'
