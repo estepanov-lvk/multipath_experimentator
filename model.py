@@ -4,27 +4,17 @@ import math
 import numpy
 import pickle
 
-#ALL_TOPOS = ['Garr201101', 'Belnet2007', 'Deltacom', 'TLex', 'Dataxchange', 'Belnet2003', 'Garr201108', 'GtsSlovakia', 'Uninett2010', 'Bellcanada', 'Missouri', 'HiberniaUk', 'Geant2010', 'Ilan', 'Garr201107', 'Palmetto', 'HurricaneElectric', 'RedBestel', 'Nordu1989', 'Nordu2005', 'GtsRomania', 'Funet', 'CrlNetworkServices', 'Marnet', 'Oxford', 'Columbus', 'VtlWavenet2008', 'Belnet2009', 'Renam', 'Aconet', 'HostwayInternational', 'Abvt', 'Garr201105', 'Napnet', 'Getnet', 'Garr199901', 'Sanren', 'Renater2010', 'Evolink', 'Garr200912', 'KentmanJul2005', 'HiberniaUs', 'Heanet', 'DialtelecomCz', 'Ion', 'Claranet', 'Dfn', 'Singaren', 'RusTTK', 'Ulaknet', 'Eenet', 'Harnet', 'Garr201110', 'BsonetEurope', 'BtAsiaPac', 'BtEurope', 'GtsHungary', 'HiberniaNireland', 'Surfnet', 'Arn', 'LambdaNet', 'Garr201102', 'Renater2004', 'Tinet', 'Cernet', 'Zamren', 'Cesnet1993', 'Renater2001', 'Reuna', 'Belnet2008', 'Amres', 'Itnet', 'Mren', 'Garr201201', 'UniC', 'Renater2008', 'Ntelos', 'Peer1', 'AttMpls', 'Garr201003', 'NetworkUsa', 'Cesnet200511', 'Sinet', 'Cesnet2001', 'Arnes', 'Bandcon', 'Pern', 'KentmanFeb2008', 'Chinanet', 'Nextgen', 'Grnet', 'HiberniaIreland', 'Garr201001', 'Marwan', 'Arpanet196912', 'Belnet2004', 'Belnet2010', 'Garr201111', 'Sago', 'Quest', 'Tw', 'Ibm', 'Sanet', 'Garr200909', 'Aarnet', 'Rediris', 'Garr201104', 'Internetmci', 'Garr201112', 'Cwix', 'Garr199905', 'EliBackbone', 'GtsCe', 'Globalcenter', 'Garr200109', 'Ntt', 'Intranetwork', 'UsSignal', 'Litnet', 'Grena', 'Shentel', 'KentmanAug2005', 'PionierL1', 'Xeex', 'Layer42', 'Spiralight', 'Epoch', 'Carnet', 'Xspedius', 'Rhnet', 'Rnp', 'Karen', 'Internode', 'Garr200902', 'Latnet', 'Colt', 'Airtel', 'Intellifiber', 'AsnetAm', 'Agis', 'Myren', 'Goodnet', 'Janetbackbone', 'HiberniaGlobal', 'Cesnet201006', 'Packetexchange', 'Cesnet200603', 'Ai3', 'PionierL3', 'Garr200112', 'Geant2009', 'Garr201012', 'Biznet', 'Savvis', 'WideJpn', 'Niif', 'Cudi', 'Garr201007', 'Vinaren', 'Pacificwave', 'Telcove', 'Gambia', 'Garr199904', 'Belnet2005', 'Renater2006', 'Gridnet', 'Garr200404', 'Restena', 'Iij', 'Navigata', 'Fatman', 'VtlWavenet2011', 'Gblnet', 'UsCarrier', 'Uunet', 'Iris', 'Nsfnet', 'GtsCzechRepublic', 'Ans', 'Geant2001', 'GtsPoland', 'Roedunet', 'BtLatinAmerica', 'Netrail', 'Uran', 'Sprint', 'VisionNet', 'Istar', 'BeyondTheNetwork', 'TataNld', 'Azrena', 'Fccn', 'SwitchL3', 'Nordu1997', 'Garr201010', 'Highwinds', 'Cynet', 'HiberniaCanada', 'Esnet', 'Jgn2Plus', 'Garr201103', 'Cesnet200304', 'Nsfcnet', 'Janetlense', 'Kreonet', 'Atmnet', 'Arpanet19719', 'Garr200212', 'Bren', 'RoedunetFibre', 'Garr201004', 'Basnet', 'Bics', 'Darkstrand', 'Integra', 'Cogentco', 'Padi', 'Canerie', 'Uninet', 'BtNorthAmerica', 'Sunet', 'Abilene', 'KentmanJan2011', 'Ernet', 'Belnet2006', 'IowaStatewideFiberMap', 'Renater1999', 'Bellsouth', 'Digex', 'Easynet', 'Arpanet19728', 'Iinet', 'Uninett2011', 'Arpanet19706', 'Switch', 'Compuserve', 'Psinet', 'Forthnet', 'Garr200908', 'Eunetworks', 'York', 'Cesnet1997', 'Cesnet1999', 'Garr201109', 'Twaren', 'Garr201005', 'Arpanet19723', 'Telecomserbia', 'Noel', 'Cesnet200706', 'Geant2012', 'KentmanApr2007', 'Garr201008', 'Globenet', 'Syringa', 'Bbnplanet']
-ALL_TOPOS = ['Garr201101'] #'Belnet2007', 'Deltacom', 'TLex', 'Dataxchange', 'Belnet2003', 'Garr201108', 'GtsSlovakia', 'Uninett2010', 'Bellcanada', 'Missouri', 'HiberniaUk', 'Geant2010', 'Ilan', 'Garr201107', 'Palmetto', 'HurricaneElectric', 'RedBestel', 'Nordu1989', 'Nordu2005', 'GtsRomania', 'Funet', 'CrlNetworkServices', 'Marnet', 'Oxford', 'Columbus', 'VtlWavenet2008', 'Belnet2009', 'Renam', 'Aconet', 'HostwayInternational', 'Abvt', 'Garr201105', 'Napnet', 'Getnet', 'Garr199901', 'Sanren', 'Renater2010', 'Evolink', 'Garr200912', 'KentmanJul2005', 'HiberniaUs', 'Heanet', 'DialtelecomCz', 'Ion', 'Claranet', 'Dfn', 'Singaren', 'RusTTK', 'Ulaknet', 'Eenet', 'Harnet', 'Garr201110', 'BsonetEurope', 'BtAsiaPac', 'BtEurope', 'GtsHungary', 'HiberniaNireland', 'Surfnet', 'Arn', 'LambdaNet', 'Garr201102', 'Renater2004', 'Tinet', 'Cernet', 'Zamren', 'Cesnet1993', 'Renater2001', 'Reuna', 'Belnet2008', 'Amres', 'Itnet', 'Mren', 'Garr201201', 'UniC', 'Renater2008', 'Ntelos', 'Peer1', 'AttMpls', 'Garr201003', 'NetworkUsa', 'Cesnet200511', 'Sinet', 'Cesnet2001', 'Arnes', 'Bandcon', 'Pern', 'KentmanFeb2008', 'Chinanet', 'Nextgen', 'Grnet', 'HiberniaIreland', 'Garr201001', 'Marwan', 'Arpanet196912', 'Belnet2004', 'Belnet2010', 'Garr201111', 'Sago', 'Quest', 'Tw', 'Ibm', 'Sanet', 'Garr200909', 'Aarnet', 'Rediris', 'Garr201104', 'Internetmci', 'Garr201112', 'Cwix', 'Garr199905', 'EliBackbone', 'GtsCe', 'Globalcenter', 'Garr200109', 'Ntt', 'Intranetwork', 'UsSignal', 'Litnet', 'Grena', 'Shentel', 'KentmanAug2005', 'PionierL1', 'Xeex', 'Layer42', 'Spiralight', 'Epoch', 'Carnet', 'Xspedius', 'Rhnet', 'Rnp', 'Karen', 'Internode', 'Garr200902', 'Latnet', 'Colt', 'Airtel', 'Intellifiber', 'AsnetAm', 'Agis', 'Myren', 'Goodnet', 'Janetbackbone', 'HiberniaGlobal', 'Cesnet201006', 'Packetexchange', 'Cesnet200603', 'Ai3', 'PionierL3', 'Garr200112', 'Geant2009', 'Garr201012', 'Biznet', 'Savvis', 'WideJpn', 'Niif', 'Cudi', 'Garr201007', 'Vinaren', 'Pacificwave', 'Telcove', 'Gambia', 'Garr199904', 'Belnet2005', 'Renater2006', 'Gridnet', 'Garr200404', 'Restena', 'Iij', 'Navigata', 'Fatman', 'VtlWavenet2011', 'Gblnet', 'UsCarrier', 'Uunet', 'Iris', 'Nsfnet', 'GtsCzechRepublic', 'Ans', 'Geant2001', 'GtsPoland', 'Roedunet', 'BtLatinAmerica', 'Netrail', 'Uran', 'Sprint', 'VisionNet', 'Istar', 'BeyondTheNetwork', 'TataNld', 'Azrena', 'Fccn', 'SwitchL3', 'Nordu1997', 'Garr201010', 'Highwinds', 'Cynet', 'HiberniaCanada', 'Esnet', 'Jgn2Plus', 'Garr201103', 'Cesnet200304', 'Nsfcnet', 'Janetlense', 'Kreonet', 'Atmnet', 'Arpanet19719', 'Garr200212', 'Bren', 'RoedunetFibre', 'Garr201004', 'Basnet', 'Bics', 'Darkstrand', 'Integra', 'Cogentco', 'Padi', 'Canerie', 'Uninet', 'BtNorthAmerica', 'Sunet', 'Abilene', 'KentmanJan2011', 'Ernet', 'Belnet2006', 'IowaStatewideFiberMap', 'Renater1999', 'Bellsouth', 'Digex', 'Easynet', 'Arpanet19728', 'Iinet', 'Uninett2011', 'Arpanet19706', 'Switch', 'Compuserve', 'Psinet', 'Forthnet', 'Garr200908', 'Eunetworks', 'York', 'Cesnet1997', 'Cesnet1999', 'Garr201109', 'Twaren', 'Garr201005', 'Arpanet19723', 'Telecomserbia', 'Noel', 'Cesnet200706', 'Geant2012', 'KentmanApr2007', 'Garr201008', 'Globenet', 'Syringa', 'Bbnplanet']
+ALL_TOPOS = ['Garr201101', 'Belnet2007', 'Deltacom', 'TLex', 'Dataxchange', 'Belnet2003', 'Garr201108', 'GtsSlovakia', 'Uninett2010', 'Bellcanada', 'Missouri', 'HiberniaUk', 'Geant2010', 'Ilan', 'Garr201107', 'Palmetto', 'HurricaneElectric', 'RedBestel', 'Nordu1989', 'Nordu2005', 'GtsRomania', 'Funet', 'CrlNetworkServices', 'Marnet', 'Oxford', 'Columbus', 'VtlWavenet2008', 'Belnet2009', 'Renam', 'Aconet', 'HostwayInternational', 'Abvt', 'Garr201105', 'Napnet', 'Getnet', 'Garr199901', 'Sanren', 'Renater2010', 'Evolink', 'Garr200912', 'KentmanJul2005', 'HiberniaUs', 'Heanet', 'DialtelecomCz', 'Ion', 'Claranet', 'Dfn', 'Singaren', 'RusTTK', 'Ulaknet', 'Eenet', 'Harnet', 'Garr201110', 'BsonetEurope', 'BtAsiaPac', 'BtEurope', 'GtsHungary', 'HiberniaNireland', 'Surfnet', 'Arn', 'LambdaNet', 'Garr201102', 'Renater2004', 'Tinet', 'Cernet', 'Zamren', 'Cesnet1993', 'Renater2001', 'Reuna', 'Belnet2008', 'Amres', 'Itnet', 'Mren', 'Garr201201', 'UniC', 'Renater2008', 'Ntelos', 'Peer1', 'AttMpls', 'Garr201003', 'NetworkUsa', 'Cesnet200511', 'Sinet', 'Cesnet2001', 'Arnes', 'Bandcon', 'Pern', 'KentmanFeb2008', 'Chinanet', 'Nextgen', 'Grnet', 'HiberniaIreland', 'Garr201001', 'Marwan', 'Arpanet196912', 'Belnet2004', 'Belnet2010', 'Garr201111', 'Sago', 'Quest', 'Tw', 'Ibm', 'Sanet', 'Garr200909', 'Aarnet', 'Rediris', 'Garr201104', 'Internetmci', 'Garr201112', 'Cwix', 'Garr199905', 'EliBackbone', 'GtsCe', 'Globalcenter', 'Garr200109', 'Ntt', 'Intranetwork', 'UsSignal', 'Litnet', 'Grena', 'Shentel', 'KentmanAug2005', 'PionierL1', 'Xeex', 'Layer42', 'Spiralight', 'Epoch', 'Carnet', 'Xspedius', 'Rhnet', 'Rnp', 'Karen', 'Internode', 'Garr200902', 'Latnet', 'Colt', 'Airtel', 'Intellifiber', 'AsnetAm', 'Agis', 'Myren', 'Goodnet', 'Janetbackbone', 'HiberniaGlobal', 'Cesnet201006', 'Packetexchange', 'Cesnet200603', 'Ai3', 'PionierL3', 'Garr200112', 'Geant2009', 'Garr201012', 'Biznet', 'Savvis', 'WideJpn', 'Niif', 'Cudi', 'Garr201007', 'Vinaren', 'Pacificwave', 'Telcove', 'Gambia', 'Garr199904', 'Belnet2005', 'Renater2006', 'Gridnet', 'Garr200404', 'Restena', 'Iij', 'Navigata', 'Fatman', 'VtlWavenet2011', 'Gblnet', 'UsCarrier', 'Uunet', 'Iris', 'Nsfnet', 'GtsCzechRepublic', 'Ans', 'Geant2001', 'GtsPoland', 'Roedunet', 'BtLatinAmerica', 'Netrail', 'Uran', 'Sprint', 'VisionNet', 'Istar', 'BeyondTheNetwork', 'TataNld', 'Azrena', 'Fccn', 'SwitchL3', 'Nordu1997', 'Garr201010', 'Highwinds', 'Cynet', 'HiberniaCanada', 'Esnet', 'Jgn2Plus', 'Garr201103', 'Cesnet200304', 'Nsfcnet', 'Janetlense', 'Kreonet', 'Atmnet', 'Arpanet19719', 'Garr200212', 'Bren', 'RoedunetFibre', 'Garr201004', 'Basnet', 'Bics', 'Darkstrand', 'Integra', 'Cogentco', 'Padi', 'Canerie', 'Uninet', 'BtNorthAmerica', 'Sunet', 'Abilene', 'KentmanJan2011', 'Ernet', 'Belnet2006', 'IowaStatewideFiberMap', 'Renater1999', 'Bellsouth', 'Digex', 'Easynet', 'Arpanet19728', 'Iinet', 'Uninett2011', 'Arpanet19706', 'Switch', 'Compuserve', 'Psinet', 'Forthnet', 'Garr200908', 'Eunetworks', 'York', 'Cesnet1997', 'Cesnet1999', 'Garr201109', 'Twaren', 'Garr201005', 'Arpanet19723', 'Telecomserbia', 'Noel', 'Cesnet200706', 'Geant2012', 'KentmanApr2007', 'Garr201008', 'Globenet', 'Syringa', 'Bbnplanet']
+#ALL_TOPOS = ['Garr201101'] #'Belnet2007', 'Deltacom', 'TLex', 'Dataxchange', 'Belnet2003', 'Garr201108', 'GtsSlovakia', 'Uninett2010', 'Bellcanada', 'Missouri', 'HiberniaUk', 'Geant2010', 'Ilan', 'Garr201107', 'Palmetto', 'HurricaneElectric', 'RedBestel', 'Nordu1989', 'Nordu2005', 'GtsRomania', 'Funet', 'CrlNetworkServices', 'Marnet', 'Oxford', 'Columbus', 'VtlWavenet2008', 'Belnet2009', 'Renam', 'Aconet', 'HostwayInternational', 'Abvt', 'Garr201105', 'Napnet', 'Getnet', 'Garr199901', 'Sanren', 'Renater2010', 'Evolink', 'Garr200912', 'KentmanJul2005', 'HiberniaUs', 'Heanet', 'DialtelecomCz', 'Ion', 'Claranet', 'Dfn', 'Singaren', 'RusTTK', 'Ulaknet', 'Eenet', 'Harnet', 'Garr201110', 'BsonetEurope', 'BtAsiaPac', 'BtEurope', 'GtsHungary', 'HiberniaNireland', 'Surfnet', 'Arn', 'LambdaNet', 'Garr201102', 'Renater2004', 'Tinet', 'Cernet', 'Zamren', 'Cesnet1993', 'Renater2001', 'Reuna', 'Belnet2008', 'Amres', 'Itnet', 'Mren', 'Garr201201', 'UniC', 'Renater2008', 'Ntelos', 'Peer1', 'AttMpls', 'Garr201003', 'NetworkUsa', 'Cesnet200511', 'Sinet', 'Cesnet2001', 'Arnes', 'Bandcon', 'Pern', 'KentmanFeb2008', 'Chinanet', 'Nextgen', 'Grnet', 'HiberniaIreland', 'Garr201001', 'Marwan', 'Arpanet196912', 'Belnet2004', 'Belnet2010', 'Garr201111', 'Sago', 'Quest', 'Tw', 'Ibm', 'Sanet', 'Garr200909', 'Aarnet', 'Rediris', 'Garr201104', 'Internetmci', 'Garr201112', 'Cwix', 'Garr199905', 'EliBackbone', 'GtsCe', 'Globalcenter', 'Garr200109', 'Ntt', 'Intranetwork', 'UsSignal', 'Litnet', 'Grena', 'Shentel', 'KentmanAug2005', 'PionierL1', 'Xeex', 'Layer42', 'Spiralight', 'Epoch', 'Carnet', 'Xspedius', 'Rhnet', 'Rnp', 'Karen', 'Internode', 'Garr200902', 'Latnet', 'Colt', 'Airtel', 'Intellifiber', 'AsnetAm', 'Agis', 'Myren', 'Goodnet', 'Janetbackbone', 'HiberniaGlobal', 'Cesnet201006', 'Packetexchange', 'Cesnet200603', 'Ai3', 'PionierL3', 'Garr200112', 'Geant2009', 'Garr201012', 'Biznet', 'Savvis', 'WideJpn', 'Niif', 'Cudi', 'Garr201007', 'Vinaren', 'Pacificwave', 'Telcove', 'Gambia', 'Garr199904', 'Belnet2005', 'Renater2006', 'Gridnet', 'Garr200404', 'Restena', 'Iij', 'Navigata', 'Fatman', 'VtlWavenet2011', 'Gblnet', 'UsCarrier', 'Uunet', 'Iris', 'Nsfnet', 'GtsCzechRepublic', 'Ans', 'Geant2001', 'GtsPoland', 'Roedunet', 'BtLatinAmerica', 'Netrail', 'Uran', 'Sprint', 'VisionNet', 'Istar', 'BeyondTheNetwork', 'TataNld', 'Azrena', 'Fccn', 'SwitchL3', 'Nordu1997', 'Garr201010', 'Highwinds', 'Cynet', 'HiberniaCanada', 'Esnet', 'Jgn2Plus', 'Garr201103', 'Cesnet200304', 'Nsfcnet', 'Janetlense', 'Kreonet', 'Atmnet', 'Arpanet19719', 'Garr200212', 'Bren', 'RoedunetFibre', 'Garr201004', 'Basnet', 'Bics', 'Darkstrand', 'Integra', 'Cogentco', 'Padi', 'Canerie', 'Uninet', 'BtNorthAmerica', 'Sunet', 'Abilene', 'KentmanJan2011', 'Ernet', 'Belnet2006', 'IowaStatewideFiberMap', 'Renater1999', 'Bellsouth', 'Digex', 'Easynet', 'Arpanet19728', 'Iinet', 'Uninett2011', 'Arpanet19706', 'Switch', 'Compuserve', 'Psinet', 'Forthnet', 'Garr200908', 'Eunetworks', 'York', 'Cesnet1997', 'Cesnet1999', 'Garr201109', 'Twaren', 'Garr201005', 'Arpanet19723', 'Telecomserbia', 'Noel', 'Cesnet200706', 'Geant2012', 'KentmanApr2007', 'Garr201008', 'Globenet', 'Syringa', 'Bbnplanet']
+TOPO_SCALE = ['Garr201103']
+TOPO_DEBUG = ['Sanren']
 STAGES = ['loader_pairs', 'schedule_flows', 'controller', 'finish']
 MAX_PAIRS = 3
+EPS = 0.000001 #espilon is very small number to compare float numbers
 
 
 RUN_TIMEOUT = 2000
 RESTART_VMS_TIMEOUT = 50
-
-#TODO move IFMAP to models
-IF_MAP = { #interfaces on head to loaders 
-    'fdmp_at_w1loader1-clone': 'enp13s0f0', 
-    'fdmp_at_w1loader2-clone': 'enp13s0f1',
-    'fdmp_at_w1loader3-clone': 'enp15s0f1',
-    #'fdmp_at_w1loader4': 'enp15s0f1',
-    'fdmp_at_w4loader1-clone': 'enp8s0f0',
-    'fdmp_at_w4loader2-clone': 'enp131s0f0',
-    'fdmp_at_w4loader3-clone': 'enp131s0f1',
-    #'fdmp_at_w4loader4': 'enp15s0f0',
-}
-BORDER_SWITCH = 1234
 
 USER_MAP = {
     "head": 'arccn',
@@ -213,7 +203,7 @@ def getDistr(distr, duration, subflows, seed):
     return resultArray
 
 
-class ExperimentAddForm():
+class ExperimentParameters():
     mode = ['mp']
     model = ['mcmf']
     subflow = ['2', '3']
@@ -221,12 +211,22 @@ class ExperimentAddForm():
     distribution = ['weibull']
     #protocol = ['mptcp', 'fdmp']
     topos = ALL_TOPOS
+    #topos = TOPO_SCALE
+    #topos = TOPO_DEBUG
     time = [180]
-    flows = [10000, 64000]
-    poles = ['70']
+    flows = [8000, 16000, 32000, 64000]
+    #flows = [8000]
+    poles = ['10', '20', '30', '40', '50', '60', '70', '80', '90', '100']
+    #poles = ['20']
     probe = '1'
+    #poles_seed = ['0', '1', '2', '3']
+    #routes_seed = ['0', '1', '2', '3']
     poles_seed = ['0']
-    routes_seed = ['0']
+    routes_seed = ['2']
+    bandwidth = [1000000] #Kbit/s
+
+    def scale(self, default = 1000000, scale = 1, number = 2):
+        self.bandwidth = [default + i * scale * default  for i in range(number)]
 
 
 class Experiment():
@@ -235,7 +235,7 @@ class Experiment():
     def __repr__(self):
         return '<Experiment {}>'.format(self.id)
 
-    def __init__(self, mode, model, subflow, cc, distribution, topo, poles, flows, poles_seed, routes_seed, time, probe, completed):
+    def __init__(self, mode, model, subflow, cc, distribution, topo, poles, flows, poles_seed, routes_seed, time, probe, completed, bw=0):
         self.id = Experiment.gid
         Experiment.gid += 1
         self.mode = mode
@@ -252,6 +252,7 @@ class Experiment():
         self.time = time
         self.probe = probe
         self.completed = completed
+        self.bandwidth = bw
 
     def __repr__(self):
         unique_str = ''
@@ -268,6 +269,7 @@ class Experiment():
         unique_str += str(self.distribution)+ '_'
         unique_str += str(self.time)+ '_'
         unique_str += str(self.probe)+ '_'
+        unique_str += str(self.bandwidth)+ '_'
         return unique_str
 
     def sha_hash(self):
@@ -299,11 +301,14 @@ def make_list(s):
     return a
 
 
-def generate_experiments(form):
+def generate_experiments(form, max_exps):
     import itertools
 
     new_experiments = []
 
+    if max_exps:
+        return generate_experiments_num(form, max_exps)
+    
     for x in itertools.product(
             form.mode,
             form.model,
@@ -316,7 +321,8 @@ def generate_experiments(form):
             make_list(form.poles_seed),
             make_list(form.routes_seed),
             #form.protocol,
-            make_list(form.time)
+            make_list(form.time),
+            form.bandwidth
             ):
         #checks?
         
@@ -338,9 +344,40 @@ def generate_experiments(form):
                     #time = x[11],
                     time = x[10],
                     probe = max_probe + i,
-                    completed = False)
+                    completed = False,
+                    bw = x[11])
             new_experiments.append(experiment)
 
+    return new_experiments
+
+def generate_experiments_num(form, max_exps):
+    from random import choice, seed
+    import copy
+    new_experiments = []
+    seed(1)
+
+    for num in range(max_exps):
+                experiment = Experiment(
+                    mode = choice(form.mode),
+                    model = choice(form.model),
+                    subflow = choice(make_list(form.subflow)),
+                    cc = choice(form.cc),
+                    distribution = choice(form.distribution),
+                    topo = choice(form.topos),
+                    poles = choice(make_list(form.poles)),
+                    flows = choice(make_list(form.flows)),
+                    poles_seed = choice(make_list(form.poles_seed)),
+                    routes_seed = choice(make_list(form.routes_seed)),
+                    time = choice(make_list(form.time)),
+                    probe = choice(range(int(form.probe))),
+                    completed = False)
+                for bndw in form.bandwidth:
+                    experiment.bandwidth = bndw
+                    experiment.scale = bndw / form.bandwidth[0]
+                    new_experiments.append(experiment)
+                    experiment = copy.copy(experiment)
+
+    
     return new_experiments
 
 #DEBUG
@@ -443,7 +480,6 @@ class Runner:
         try:
             #start_topology(exp)
             #set_qos(exp)
-            print("DEPLOY")
             self.loader_pairs = self.generate_loader_pairs(exp.flows)
             #setup_multiloader(self.loader_pairs, exp)
             #start_controller(exp)
@@ -454,7 +490,6 @@ class Runner:
             raise
 
     def schedule_flows(self, exp):
-        print("SCHEDULE FLOWS")
         #loader_pairs = unite_loaders(self.loader_pairs)
         self.flows = []
         for params in self.loader_pairs:
@@ -479,8 +514,8 @@ class Runner:
                 for i in range(int(flow_number)):
                     new_flow = Flow(params['client_ip'], params['server_ip'], params['client_ports'] + i, params['server_ports'])
                     new_flow.start_time = flow_start_time[i]
-                    new_flow.transfer = transfer_str
-                    new_flow.bitrate = bitrate
+                    new_flow.transfer = str(int(int(transfer_str) * exp.scale))
+                    new_flow.bitrate = str(int(int(bitrate) * exp.scale))
                     self.flows.append(new_flow)
                     #print(new_flow)
                     events.append(Event(new_flow.start_time, new_flow, "add"))
@@ -489,14 +524,18 @@ class Runner:
                     #print(int(new_flow.bitrate))
                     #print("")
                     events.append(Event(new_flow.start_time + int(new_flow.transfer) * 8 / int(new_flow.bitrate), new_flow, "delete"))
+        bitr = set()
+        for f in self.flows:
+            bitr.add(int(f.bitrate))
 
 
-    def create_controller_config(self, topo, subflow, poles, proto):
-        BANDWIDTH = 1000000 #Kbit/s  current value is 1 Gbit/s
+    def create_controller_config(self, topo, subflow, poles, proto, seed, bw):
+        #BANDWIDTH = 1000000 #Kbit/s  current value is 1 Gbit/s
+        BANDWIDTH = bw
         print(topo, subflow, poles)
         dict1 = {}
         dict1["sub_num"] = subflow
-        dict1["seed"] = 1
+        dict1["seed"] = seed
         dict1["pole_ratio"] = poles
         dict1["protocol"] = proto
         dict_topo = {}
@@ -562,7 +601,8 @@ class Runner:
 
     def init_routes(self, topo, subflow):
         import json
-        all_routes = json.load(open("routes/"+topo+".json"))
+        with open("routes/"+topo+".json") as f:
+            all_routes = json.load(f)
         return all_routes[str(subflow)]
 
     def init_poles(self, config):
@@ -673,7 +713,7 @@ class Runner:
                 if self.get_route_bw(config, flow, routes, i) <= 0:
                     completed_subflows.add(i)
 
-        if (sum(flow.rates) < int(flow.bitrate) / 1000):
+        if (sum(flow.rates) < int(flow.bitrate) / 1000 - EPS):
             flow.status = False
             for i in range(len(flow.rates)):
                 self.add_bw_on_route(config, flow, routes, i, flow.rates[i])
@@ -741,7 +781,7 @@ class Runner:
         exp.results = {}
         for protocol in ['mptcp', 'fdmp']:
                 exp.protocol = protocol
-                config = self.create_controller_config(exp.topo, exp.subflow, exp.poles, exp.protocol)
+                config = self.create_controller_config(exp.topo, exp.subflow, exp.poles, exp.protocol, exp.poles_seed, exp.bandwidth)
                 routes = self.init_routes(exp.topo, exp.subflow)
                 self.init_poles(config)
                 #print(config)
@@ -770,14 +810,32 @@ class Runner:
                 exp.results[protocol]['flows'] = deepcopy(self.flows)
                 print("Success: ", sum(int(x.status) for x in self.flows), " from ", len(self.flows))
                 #self.schedule_flows(exp)
+
+        #Clear redundant fields
+        del exp.results['mptcp']['config']['edges']
+        del exp.results['mptcp']['config']['topo']
+        del exp.results['fdmp']['config']['edges']
+        del exp.results['fdmp']['config']['topo']
+        for flow in exp.results['fdmp']['flows']:
+            del flow.dst_ip
+            del flow.dst_port
+            del flow.src_ip
+            del flow.src_port
+        for flow in exp.results['mptcp']['flows']:
+            del flow.dst_ip
+            del flow.dst_port
+            del flow.src_ip
+            del flow.src_port
+
         import pickle
-        write_file = open('model_results/'+str(exp), 'wb')
+        write_file = open('/vimages/model_results_scale2/'+str(exp), 'wb')
         pickle.dump(exp, write_file)
 
             #print(event.time)
         #print(config['edges'])
         #for flow in self.flows:
         #    print(flow.rates)
+        write_file.close()
 
 
     stages = [
@@ -820,12 +878,41 @@ class Event():
 
 events = []
 
+def options():
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description='Multipath experiment model')
+    parser.add_argument('--scale', type=float, help='Default bandwidth fraction which will be iteratively added')
+    parser.add_argument('--bw', type=int, help='Bandwidth in Kbit/s', required='--scale' in sys.argv)
+    parser.add_argument('--scale_num', type=int, help='Different bandwidth values number', required='--scale' in sys.argv)
+    parser.add_argument('--max_exps', type=int, help='Maximum number of experiments not regarding scale factor')
+
+    return parser.parse_args()
+
 if __name__ == '__main__':
     runner = Runner()
-    exps = generate_experiments(ExperimentAddForm())
-    for exp in exps:
+
+    args = options()
+    exp_args = ExperimentParameters()
+
+    if args.scale:
+        exp_args.scale(args.bw, args.scale, args.scale_num)
+
+    exps = generate_experiments(exp_args, args.max_exps)
+
+    if args.max_exps:
+        print(exps)
+    start = False
+    while exps:
+        exp = exps.pop(0)
         print(exp)
+        #if str(exp) == 'mp_mcmf_3_VtlWavenet2008_30_64000_0_0_cubic_weibull_180_0_':
+        #    start = True
+        #if not start:
+        #    continue
         events = []
         runner.run(exp)
+        del exp
+
         #print(len(events))
-        #break
