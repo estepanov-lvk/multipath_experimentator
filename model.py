@@ -11,6 +11,7 @@ TOPO_DEBUG = ['Sanren']
 STAGES = ['loader_pairs', 'schedule_flows', 'controller', 'finish']
 MAX_PAIRS = 3
 EPS = 0.000001 #espilon is very small number to compare float numbers
+DEFAULT_OUTPUT_DIRECTORY = '/vimages/model_results_scale2/'
 
 
 RUN_TIMEOUT = 2000
@@ -137,6 +138,10 @@ class VMConfig(object):
 
 vm_config = VMConfig()
 
+def check_dir(dirname):
+    from pathlib import Path
+    Path(dirname).mkdir(parents=True, exist_ok=True)
+
 def get_qos_classes():
     #TODO not to rely on the vm_config (we should use database)
     classes = []
@@ -235,7 +240,8 @@ class Experiment():
     def __repr__(self):
         return '<Experiment {}>'.format(self.id)
 
-    def __init__(self, mode, model, subflow, cc, distribution, topo, poles, flows, poles_seed, routes_seed, time, probe, completed, bw=0):
+    def __init__(self, mode, model, subflow, cc, distribution, topo, poles, flows, poles_seed, routes_seed,
+                    time, probe, completed, out=DEFAULT_OUTPUT_DIRECTORY, bw=0):
         self.id = Experiment.gid
         Experiment.gid += 1
         self.mode = mode
@@ -253,6 +259,9 @@ class Experiment():
         self.probe = probe
         self.completed = completed
         self.bandwidth = bw
+
+        check_dir(out)
+        self.out = out
 
     def __repr__(self):
         unique_str = ''
@@ -301,13 +310,16 @@ def make_list(s):
     return a
 
 
-def generate_experiments(form, max_exps):
+def generate_experiments(form, args):
     import itertools
+
+    if args.scale:
+        exp_args.scale(args.bw, args.scale, args.scale_num)
 
     new_experiments = []
 
-    if max_exps:
-        return generate_experiments_num(form, max_exps)
+    if args.max_exps:
+        return generate_experiments_num(form, args)
     
     for x in itertools.product(
             form.mode,
@@ -345,18 +357,19 @@ def generate_experiments(form, max_exps):
                     time = x[10],
                     probe = max_probe + i,
                     completed = False,
+                    out = args.o,
                     bw = x[11])
             new_experiments.append(experiment)
 
     return new_experiments
 
-def generate_experiments_num(form, max_exps):
+def generate_experiments_num(form, args):
     from random import choice, seed
     import copy
     new_experiments = []
     seed(1)
 
-    for num in range(max_exps):
+    for num in range(args.max_exps):
                 experiment = Experiment(
                     mode = choice(form.mode),
                     model = choice(form.model),
@@ -370,7 +383,8 @@ def generate_experiments_num(form, max_exps):
                     routes_seed = choice(make_list(form.routes_seed)),
                     time = choice(make_list(form.time)),
                     probe = choice(range(int(form.probe))),
-                    completed = False)
+                    completed = False,
+                    out = args.o)
                 for bndw in form.bandwidth:
                     experiment.bandwidth = bndw
                     experiment.scale = bndw / form.bandwidth[0]
@@ -828,7 +842,8 @@ class Runner:
             del flow.src_port
 
         import pickle
-        write_file = open('/vimages/model_results_scale2/'+str(exp), 'wb')
+
+        write_file = open(exp.out + str(exp), 'wb')
         pickle.dump(exp, write_file)
 
             #print(event.time)
@@ -887,6 +902,7 @@ def options():
     parser.add_argument('--bw', type=int, help='Bandwidth in Kbit/s', required='--scale' in sys.argv)
     parser.add_argument('--scale_num', type=int, help='Different bandwidth values number', required='--scale' in sys.argv)
     parser.add_argument('--max_exps', type=int, help='Maximum number of experiments not regarding scale factor')
+    parser.add_argument('-o', type=str, help='Output directory')
 
     return parser.parse_args()
 
@@ -895,14 +911,8 @@ if __name__ == '__main__':
 
     args = options()
     exp_args = ExperimentParameters()
+    exps = generate_experiments(exp_args, args)
 
-    if args.scale:
-        exp_args.scale(args.bw, args.scale, args.scale_num)
-
-    exps = generate_experiments(exp_args, args.max_exps)
-
-    if args.max_exps:
-        print(exps)
     start = False
     while exps:
         exp = exps.pop(0)
